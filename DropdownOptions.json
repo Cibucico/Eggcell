@@ -1,0 +1,5 @@
+{
+  "Gender": [ "Male", "Female" ],
+  "Race": [ "African", "White", "Chinese", "Coloured" , "Indian"]
+
+}
