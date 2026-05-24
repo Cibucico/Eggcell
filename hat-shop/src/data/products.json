@@ -1,0 +1,98 @@
+[
+  {
+    "id": "hat-01",
+    "name": "Pink Floral Fascinator",
+    "slug": "hat-01",
+    "category": "fascinator",
+    "price": 850,
+    "description": "A showstopping wide-brim fascinator in blush sinamay adorned with hand-crafted 3D flowers and satin ribbon. Designed to make you the most elegant person in the room.",
+    "sizes": ["S/M", "L/XL"],
+    "images": ["https://placehold.co/600x600/F4B8C1/6B1A2A?text=Pink+Floral+Fascinator"],
+    "featured": true,
+    "inStock": true
+  },
+  {
+    "id": "hat-02",
+    "name": "Royal Blue Bridal Set",
+    "slug": "hat-02",
+    "category": "bridal-party",
+    "price": 750,
+    "description": "Coordinated wide-brim hats for the entire bridal party. Structured royal blue organza with bow detail — perfect for making your wedding day unforgettable. Price per hat, sets of 4+ available.",
+    "sizes": ["One Size"],
+    "images": ["https://placehold.co/600x600/2451C8/FFFFFF?text=Royal+Blue+Bridal+Set"],
+    "featured": true,
+    "inStock": true
+  },
+  {
+    "id": "hat-03",
+    "name": "Champagne Straw Wide Brim",
+    "slug": "hat-03",
+    "category": "event",
+    "price": 680,
+    "description": "A natural straw wide-brim hat with a champagne satin ribbon band. Effortlessly chic for garden parties, race days, and outdoor celebrations.",
+    "sizes": ["S/M", "L/XL"],
+    "images": ["https://placehold.co/600x600/C8A96E/3D2C1A?text=Champagne+Straw"],
+    "featured": true,
+    "inStock": true
+  },
+  {
+    "id": "hat-04",
+    "name": "Ivory Traditional Umqhele",
+    "slug": "hat-04",
+    "category": "traditional",
+    "price": 420,
+    "description": "A beautifully crafted traditional umqhele headpiece in ivory satin and lace. Honouring heritage with elegance for lobola ceremonies and cultural celebrations.",
+    "sizes": ["One Size"],
+    "images": ["https://placehold.co/600x600/F0EDE8/3D2C1A?text=Ivory+Umqhele"],
+    "featured": false,
+    "inStock": true
+  },
+  {
+    "id": "hat-05",
+    "name": "Blush Bridal Crown",
+    "slug": "hat-05",
+    "category": "fascinator",
+    "price": 920,
+    "description": "An ethereal wide-brim bridal fascinator in blush organza with feather trim and pearl accents. The crown jewel for your wedding day look.",
+    "sizes": ["S/M", "L/XL"],
+    "images": ["https://placehold.co/600x600/E8A7B0/3D2C1A?text=Blush+Bridal+Crown"],
+    "featured": true,
+    "inStock": true
+  },
+  {
+    "id": "hat-06",
+    "name": "White Lace Headpiece",
+    "slug": "hat-06",
+    "category": "traditional",
+    "price": 380,
+    "description": "A delicate birdcage veil headpiece in white lace and organza. Elegant for both modern and traditional wedding ceremonies.",
+    "sizes": ["One Size"],
+    "images": ["https://placehold.co/600x600/F5F5F0/555555?text=White+Lace"],
+    "featured": false,
+    "inStock": true
+  },
+  {
+    "id": "hat-07",
+    "name": "Gold Church Hat",
+    "slug": "hat-07",
+    "category": "event",
+    "price": 780,
+    "description": "A regal wide-brim church hat in gold sinamay with statement bow. Built for Sunday service and special occasions — wear it like royalty.",
+    "sizes": ["S/M", "L/XL"],
+    "images": ["https://placehold.co/600x600/D4AF37/3D2C1A?text=Gold+Church+Hat"],
+    "featured": false,
+    "inStock": true
+  },
+  {
+    "id": "hat-08",
+    "name": "Navy Occasion Fascinator",
+    "slug": "hat-08",
+    "category": "fascinator",
+    "price": 650,
+    "description": "A structured navy blue fascinator with dramatic curved brim and feather detail. Sophisticated and bold for any formal occasion.",
+    "sizes": ["S/M", "L/XL"],
+    "images": ["https://placehold.co/600x600/1B2A6B/FFFFFF?text=Navy+Fascinator"],
+    "featured": false,
+    "inStock": true
+  }
+]
