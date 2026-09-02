@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getProductBySlug, products } from '@/data/products'
 import { Badge } from '@/components/ui/Badge'
+import { AddToCartButton } from '@/components/products/AddToCartButton'
 import { MessageCircle, Mail, ArrowLeft, Leaf } from 'lucide-react'
 
 interface Props {
@@ -91,28 +92,36 @@ export default function ProductDetailPage({ params }: Props) {
             ))}
           </div>
 
-          {/* Order CTAs */}
-          <div className="mt-8 rounded-2xl bg-brand-50 border border-brand-100 p-6">
-            <p className="font-semibold text-zinc-800 mb-1">Ready to order?</p>
-            <p className="text-sm text-zinc-500 mb-4">
-              Contact us directly — we respond within a few hours.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3">
+          {/* Add to cart */}
+          <div className="mt-8 flex flex-col sm:flex-row gap-3">
+            <AddToCartButton product={product} size="lg" className="flex-1" />
+            <Link
+              href="/cart"
+              className="inline-flex items-center justify-center rounded-full border-2 border-brand-500 text-brand-600 hover:bg-brand-50 font-semibold px-6 py-3 transition-colors duration-150"
+            >
+              View Cart
+            </Link>
+          </div>
+
+          {/* Contact CTAs */}
+          <div className="mt-5 rounded-2xl bg-brand-50 border border-brand-100 p-5">
+            <p className="text-sm text-zinc-500 mb-3">Prefer to order directly? Reach us on:</p>
+            <div className="flex flex-wrap gap-3">
               <a
                 href={waLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-500 hover:bg-brand-600 text-white font-semibold px-6 py-3 transition-colors duration-150"
+                className="inline-flex items-center gap-2 text-sm text-brand-700 hover:underline font-medium"
               >
-                <MessageCircle size={18} />
-                Order via WhatsApp
+                <MessageCircle size={15} />
+                WhatsApp
               </a>
               <a
                 href={`mailto:hello@greenleafcbd.co.za?subject=Order: ${encodeURIComponent(product.name)}`}
-                className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-brand-500 text-brand-600 hover:bg-brand-50 font-semibold px-6 py-3 transition-colors duration-150"
+                className="inline-flex items-center gap-2 text-sm text-brand-700 hover:underline font-medium"
               >
-                <Mail size={18} />
-                Email Us
+                <Mail size={15} />
+                Email
               </a>
             </div>
           </div>
