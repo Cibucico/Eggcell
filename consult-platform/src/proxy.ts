@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PROTECTED = ["/dashboard", "/learn", "/admin", "/checkout"];
+const PROTECTED = ["/dashboard", "/enrol", "/admin", "/checkout"];
 
 /**
  * Runs before every page request. Keeps the Supabase session cookie fresh and

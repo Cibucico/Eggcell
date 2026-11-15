@@ -2,19 +2,33 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Suspense } from "react";
 import type { NavItem } from "@/config/brand";
 import { cn } from "@/lib/utils";
 
-export function NavLinks({
-  items,
-  orientation = "horizontal",
-  onNavigate,
-}: {
+type Props = {
   items: NavItem[];
   orientation?: "horizontal" | "vertical";
   onNavigate?: () => void;
-}) {
-  const pathname = usePathname();
+};
+
+/**
+ * The current page is only known at request time on dynamic routes, so the
+ * links render first without a highlight and the active state streams in.
+ */
+export function NavLinks(props: Props) {
+  return (
+    <Suspense fallback={<NavList {...props} pathname="" />}>
+      <ActiveNavList {...props} />
+    </Suspense>
+  );
+}
+
+function ActiveNavList(props: Props) {
+  return <NavList {...props} pathname={usePathname()} />;
+}
+
+function NavList({ items, orientation = "horizontal", onNavigate, pathname }: Props & { pathname: string }) {
   return (
     <ul className={cn("flex", orientation === "horizontal" ? "items-center gap-1" : "flex-col gap-1")}>
       {items.map((item) => {

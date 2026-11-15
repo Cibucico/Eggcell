@@ -84,6 +84,20 @@ export type ModuleOutline = {
 
 export type CourseWithOutline = Course & { modules: ModuleOutline[] };
 
+export type LiveSession = {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string;
+  description: string;
+  presenter: string;
+  starts_at: string;
+  duration_minutes: number;
+  platform: string;
+  capacity: number | null;
+  sort_order: number;
+};
+
 export type BookingStatus = "requested" | "confirmed" | "completed" | "cancelled";
 export type LeadStatus = "new" | "in_progress" | "closed";
 export type OrderStatus = "pending" | "paid" | "failed" | "cancelled";

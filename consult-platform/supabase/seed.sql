@@ -62,106 +62,31 @@ insert into public.lessons (id, course_id, module_id, title, duration_minutes, i
   ('00000000-0000-4000-8000-000700000011', '00000000-0000-4000-8000-000500000003', '00000000-0000-4000-8000-000600000006', 'The first five steps to take', 20, false, 2)
 on conflict (id) do nothing;
 
-insert into public.lesson_contents (lesson_id, body, video_url) values
-  ('00000000-0000-4000-8000-000700000001', '## What you will learn
-
-Every kind of funding has a price. Debt costs interest and needs security. Equity costs ownership and control. Grants cost time and reporting effort.
-
-## The three questions
-
-Before approaching anyone, answer these:
-
-- How much do you need, and what exactly will it pay for?
-- When will the business be able to repay or return it?
-- What are you prepared to give up in exchange?
-
-## Exercise
-
-Write a one-page funding brief answering the three questions above. You will use it throughout the course.', null),
-  ('00000000-0000-4000-8000-000700000002', '## The funding landscape
-
-South African businesses can draw on commercial banks, development finance institutions, enterprise and supplier development programmes, private investors and grant schemes.
-
-## Matching funder to need
-
-Each funder has a mandate: a deal size, a sector focus and a stage they prefer. Applying outside a funder''s mandate is the most common reason for rejection.
-
-## Exercise
-
-List five funders whose mandate matches your funding brief.', null),
-  ('00000000-0000-4000-8000-000700000003', '## Why funders want a model
-
-A model shows that you understand what drives your revenue and costs, and that the business can service the funding.
-
-## Structure
-
-- Assumptions sheet
-- Income statement
-- Cash flow
-- Balance sheet
-- Funding and repayment schedule
-
-## Exercise
-
-Complete the assumptions sheet for your own business.', null),
-  ('00000000-0000-4000-8000-000700000004', '## Expect the hard questions
-
-Funders will ask what happens if sales come in 20% lower or a major customer pays late.
-
-## Exercise
-
-Run three scenarios through your model: base case, slow sales and delayed payment. Note the lowest cash balance in each.', null),
-  ('00000000-0000-4000-8000-000700000005', '## Ten slides
-
-Problem, solution, market, business model, traction, team, competition, financials, the ask, and use of funds.
-
-## Exercise
-
-Draft all ten slides using your funding brief and model.', null),
-  ('00000000-0000-4000-8000-000700000006', '## What goes in a data room
-
-Company documents, tax clearance, financial statements, management accounts, key contracts, and compliance certificates.
-
-## Exercise
-
-Use the checklist to assemble your data room and mark any gaps.', null),
-  ('00000000-0000-4000-8000-000700000007', '## Revenue to profit
-
-The income statement tells the story of a period: what you sold, what it cost to deliver, what it cost to run the business, and what was left.
-
-## Exercise
-
-Take your own department''s latest report and identify gross profit and operating profit.', null),
-  ('00000000-0000-4000-8000-000700000008', '## Profit is not cash
-
-A sale on 60-day terms is profit today and cash in two months. Stock you bought is cash out today and a cost only when it sells.
-
-## Exercise
-
-Calculate how many days it takes your business to turn a sale into cash.', null),
-  ('00000000-0000-4000-8000-000700000009', '## Start from drivers
-
-A good budget starts from what drives the numbers: volumes, prices, headcount and rates.
-
-## Exercise
-
-Build next quarter''s budget for your area from its drivers.', null),
-  ('00000000-0000-4000-8000-000700000010', '## The short version
-
-If your business collects, stores or uses information about identifiable people or companies, POPIA applies to you.
-
-## Personal information
-
-Names, contact details, ID numbers, employment history, financial details and opinions about a person all count.', null),
-  ('00000000-0000-4000-8000-000700000011', '## Five steps
-
-- Appoint and register your Information Officer
-- Map the personal information you hold
-- Publish a privacy notice
-- Secure the information
-- Decide how you will respond to a breach
-
-## Exercise
-
-Complete the one-page data map template for your business.', null)
+insert into public.lesson_contents (lesson_id, blocks) values
+  ('00000000-0000-4000-8000-000700000001', '[{"type":"slide","title":"Every kind of money has a price"},{"type":"text","markdown":"Before you approach a single funder, you need to know what you are asking for and what it will cost you.\n\nThere are three broad kinds of funding. Each one is paid for in a different way: with **interest**, with **ownership**, or with **time**."},{"type":"callout","tone":"tip","title":"How this lesson works","text":"Use Next and Back to move through the screens. Click the cards and panels to open them, and answer the questions as you go."},{"type":"slide","title":"The three kinds of funding"},{"type":"reveal","intro":"Open each panel to see what the funding really costs.","items":[{"title":"Debt","text":"A loan from a bank or development funder. You keep full ownership, but you pay interest, you usually need security, and repayments start whether or not the business is doing well."},{"title":"Equity","text":"An investor buys a share of the business. There are no repayments, but you give up part of the ownership, part of future profits, and some control over decisions."},{"title":"Grants","text":"Money you do not repay, usually from government or a corporate programme. The cost is time: long applications, strict conditions, and detailed reporting on how it was spent."}]},{"type":"slide","title":"Key terms"},{"type":"flashcards","intro":"Click a card to turn it over.","cards":[{"front":"Security","back":"An asset the lender can claim if you do not repay, such as property, equipment or debtors."},{"front":"Dilution","back":"The reduction in your percentage ownership when new shares are issued to an investor."},{"front":"Mandate","back":"The deal size, sector and business stage that a particular funder is set up to finance."}]},{"type":"slide","title":"Check your understanding"},{"type":"quiz","question":"A profitable business with steady cash flow wants to buy a delivery vehicle and the owners do not want to give up any ownership. Which funding fits best?","options":["Equity from an investor","Debt, such as asset finance","A grant"],"correctIndex":1,"explanation":"Steady cash flow can service repayments, the vehicle itself can act as security, and debt leaves ownership untouched."},{"type":"quiz","question":"What is the main cost of grant funding?","options":["Interest","Loss of ownership","Time and reporting effort"],"correctIndex":2,"explanation":"Grants are not repaid and do not dilute ownership, but applications and compliance reporting take significant time."},{"type":"slide","title":"The three questions"},{"type":"text","markdown":"Before approaching anyone, answer these:\n\n- How much do you need, and what exactly will it pay for?\n- When will the business be able to repay or return it?\n- What are you prepared to give up in exchange?"},{"type":"callout","tone":"important","title":"Why this matters","text":"The most common reason applications fail is asking the wrong kind of funder for the wrong kind of money."},{"type":"slide","title":"Exercise"},{"type":"exercise","title":"Write your funding brief","text":"Write one page answering the three questions for your own business. You will build on this brief in every lesson that follows."}]'::jsonb),
+  ('00000000-0000-4000-8000-000700000002', '[{"type":"slide","title":"The funding landscape"},{"type":"text","markdown":"South African businesses can draw on commercial banks, development finance institutions, enterprise and supplier development programmes, private investors and grant schemes."},{"type":"slide","title":"Matching funder to need"},{"type":"text","markdown":"Each funder has a mandate: a deal size, a sector focus and a stage they prefer. Applying outside a funder''s mandate is the most common reason for rejection."},{"type":"slide","title":"Exercise"},{"type":"exercise","title":"Exercise","text":"List five funders whose mandate matches your funding brief."}]'::jsonb),
+  ('00000000-0000-4000-8000-000700000003', '[{"type":"slide","title":"Why funders want a model"},{"type":"text","markdown":"A model shows that you understand what drives your revenue and costs, and that the business can service the funding."},{"type":"slide","title":"Structure"},{"type":"text","markdown":"- Assumptions sheet\n- Income statement\n- Cash flow\n- Balance sheet\n- Funding and repayment schedule"},{"type":"slide","title":"Exercise"},{"type":"exercise","title":"Exercise","text":"Complete the assumptions sheet for your own business."}]'::jsonb),
+  ('00000000-0000-4000-8000-000700000004', '[{"type":"slide","title":"Expect the hard questions"},{"type":"text","markdown":"Funders will ask what happens if sales come in 20% lower or a major customer pays late."},{"type":"slide","title":"Exercise"},{"type":"exercise","title":"Exercise","text":"Run three scenarios through your model: base case, slow sales and delayed payment. Note the lowest cash balance in each."}]'::jsonb),
+  ('00000000-0000-4000-8000-000700000005', '[{"type":"slide","title":"Ten slides"},{"type":"text","markdown":"Problem, solution, market, business model, traction, team, competition, financials, the ask, and use of funds."},{"type":"slide","title":"Exercise"},{"type":"exercise","title":"Exercise","text":"Draft all ten slides using your funding brief and model."}]'::jsonb),
+  ('00000000-0000-4000-8000-000700000006', '[{"type":"slide","title":"What goes in a data room"},{"type":"text","markdown":"Company documents, tax clearance, financial statements, management accounts, key contracts, and compliance certificates."},{"type":"slide","title":"Exercise"},{"type":"exercise","title":"Exercise","text":"Use the checklist to assemble your data room and mark any gaps."}]'::jsonb),
+  ('00000000-0000-4000-8000-000700000007', '[{"type":"slide","title":"Revenue to profit"},{"type":"text","markdown":"The income statement tells the story of a period: what you sold, what it cost to deliver, what it cost to run the business, and what was left."},{"type":"slide","title":"Exercise"},{"type":"exercise","title":"Exercise","text":"Take your own department''s latest report and identify gross profit and operating profit."}]'::jsonb),
+  ('00000000-0000-4000-8000-000700000008', '[{"type":"slide","title":"Profit is not cash"},{"type":"text","markdown":"A sale on 60-day terms is profit today and cash in two months. Stock you bought is cash out today and a cost only when it sells."},{"type":"slide","title":"Exercise"},{"type":"exercise","title":"Exercise","text":"Calculate how many days it takes your business to turn a sale into cash."}]'::jsonb),
+  ('00000000-0000-4000-8000-000700000009', '[{"type":"slide","title":"Start from drivers"},{"type":"text","markdown":"A good budget starts from what drives the numbers: volumes, prices, headcount and rates."},{"type":"slide","title":"Exercise"},{"type":"exercise","title":"Exercise","text":"Build next quarter''s budget for your area from its drivers."}]'::jsonb),
+  ('00000000-0000-4000-8000-000700000010', '[{"type":"slide","title":"The short version"},{"type":"text","markdown":"If your business collects, stores or uses information about identifiable people or companies, POPIA applies to you."},{"type":"slide","title":"Personal information"},{"type":"text","markdown":"Names, contact details, ID numbers, employment history, financial details and opinions about a person all count."}]'::jsonb),
+  ('00000000-0000-4000-8000-000700000011', '[{"type":"slide","title":"Five steps"},{"type":"text","markdown":"- Appoint and register your Information Officer\n- Map the personal information you hold\n- Publish a privacy notice\n- Secure the information\n- Decide how you will respond to a breach"},{"type":"slide","title":"Exercise"},{"type":"exercise","title":"Exercise","text":"Complete the one-page data map template for your business."}]'::jsonb)
 on conflict (lesson_id) do nothing;
+
+-- Live sessions are seeded without a joining link; add the Zoom link in the admin area.
+insert into public.live_sessions (id, slug, title, summary, description, presenter, starts_at, duration_minutes, platform, capacity, sort_order, published) values
+  ('00000000-0000-4000-8000-000800000001', 'funding-clinic', 'Funding Clinic: Ask a Partner Anything', 'A free live question-and-answer session on raising debt, equity and grant funding in South Africa.', 'Bring your funding questions and put them to a partner directly. We open with a 15-minute overview of the current funding landscape, then spend the rest of the hour on your questions.
+
+Open to everyone. Register to receive the joining link.', 'Thandi Mokoena', '2027-01-21T16:00:00+02:00', 60, 'Zoom', 100, 1, true),
+  ('00000000-0000-4000-8000-000800000002', 'reading-your-numbers', 'Reading Your Numbers: A Live Workshop', 'Work through a real set of management accounts with a partner and learn what to look for each month.', 'A practical workshop for owners and managers. We walk through an anonymised set of management accounts line by line and show you the five checks to run every month.
+
+Open to everyone. Register to receive the joining link.', 'David Naidoo', '2027-02-04T10:00:00+02:00', 90, 'Zoom', null, 2, true)
+on conflict (id) do nothing;
+
+insert into public.live_session_links (session_id, join_url) values
+  ('00000000-0000-4000-8000-000800000001', ''),
+  ('00000000-0000-4000-8000-000800000002', '')
+on conflict (session_id) do nothing;

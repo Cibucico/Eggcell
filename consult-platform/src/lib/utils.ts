@@ -80,3 +80,19 @@ export function dateInSouthAfrica(offsetDays = 0): string {
   const when = new Date(Date.now() + offsetDays * 24 * 60 * 60 * 1000);
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Johannesburg" }).format(when);
 }
+
+const sessionFmt = new Intl.DateTimeFormat("en-ZA", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+  timeZone: "Africa/Johannesburg",
+});
+
+/** "Thursday, 21 January 2027 at 16:00 SAST" */
+export function formatSessionTime(value: string | Date): string {
+  return `${sessionFmt.format(new Date(value))} SAST`;
+}

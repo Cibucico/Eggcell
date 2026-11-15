@@ -3,8 +3,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { brand } from "@/config/brand";
 import { CourseCard } from "@/components/site/cards";
-import { EmptyState, PageHeader, Section } from "@/components/ui/primitives";
-import { getCourses } from "@/lib/data/content";
+import { EmptyState, PageHeader, Section, SectionHeading } from "@/components/ui/primitives";
+import { LiveSessionCard } from "@/components/site/live-session-card";
+import { getCourses, getUpcomingLiveSessions } from "@/lib/data/content";
 
 export const metadata: Metadata = {
   title: "Online training",
@@ -19,7 +20,7 @@ const points = [
 
 export default async function TrainingPage() {
   if (!brand.features.training) notFound();
-  const courses = await getCourses();
+  const [courses, sessions] = await Promise.all([getCourses(), getUpcomingLiveSessions()]);
   return (
     <>
       <PageHeader
@@ -51,6 +52,20 @@ export default async function TrainingPage() {
           </div>
         )}
       </Section>
+      {sessions.length > 0 && (
+        <Section tone="surface" id="live">
+          <SectionHeading
+            eyebrow="Live sessions"
+            title="Join us live"
+            intro="Free online sessions with our partners, open to everyone. Register to get the joining link."
+          />
+          <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {sessions.map((session) => (
+              <LiveSessionCard key={session.id} session={session} />
+            ))}
+          </div>
+        </Section>
+      )}
     </>
   );
 }

@@ -9,9 +9,11 @@
  * Everything here is SAMPLE content for a fictional consultancy. Replace it
  * with the client's real services, people and results before going live.
  */
+import type { Block } from "@/lib/blocks";
 import type {
   CaseStudy,
   CourseWithOutline,
+  LiveSession,
   Service,
   TeamMember,
   Testimonial,
@@ -23,8 +25,7 @@ export type SeedLesson = {
   duration_minutes: number;
   is_preview: boolean;
   sort_order: number;
-  body: string;
-  video_url: string | null;
+  blocks: Block[];
 };
 
 export type SeedCourse = Omit<CourseWithOutline, "modules"> & {
@@ -35,6 +36,25 @@ export type SeedCourse = Omit<CourseWithOutline, "modules"> & {
     lessons: SeedLesson[];
   }[];
 };
+
+/**
+ * Builds a simple storyboard from notes: each "## Heading" starts a new
+ * slide, and an "Exercise" section becomes an exercise block.
+ */
+function slidesFromNotes(notes: string): Block[] {
+  const blocks: Block[] = [];
+  for (const section of notes.split(/^## /m).filter((part) => part.trim())) {
+    const [title, ...rest] = section.split("\n");
+    const body = rest.join("\n").trim();
+    blocks.push({ type: "slide", title: title.trim() });
+    if (title.trim().toLowerCase() === "exercise") {
+      blocks.push({ type: "exercise", title: "Exercise", text: body });
+    } else if (body) {
+      blocks.push({ type: "text", markdown: body });
+    }
+  }
+  return blocks;
+}
 
 const id = (group: number, n: number) =>
   `00000000-0000-4000-8000-${String(group).padStart(4, "0")}${String(n).padStart(8, "0")}`;
@@ -317,8 +337,94 @@ export const seedCourses: SeedCourse[] = [
             duration_minutes: 18,
             is_preview: true,
             sort_order: 1,
-            video_url: null,
-            body: "## What you will learn\n\nEvery kind of funding has a price. Debt costs interest and needs security. Equity costs ownership and control. Grants cost time and reporting effort.\n\n## The three questions\n\nBefore approaching anyone, answer these:\n\n- How much do you need, and what exactly will it pay for?\n- When will the business be able to repay or return it?\n- What are you prepared to give up in exchange?\n\n## Exercise\n\nWrite a one-page funding brief answering the three questions above. You will use it throughout the course.",
+            blocks: [
+              { type: "slide", title: "Every kind of money has a price" },
+              {
+                type: "text",
+                markdown:
+                  "Before you approach a single funder, you need to know what you are asking for and what it will cost you.\n\nThere are three broad kinds of funding. Each one is paid for in a different way: with **interest**, with **ownership**, or with **time**.",
+              },
+              {
+                type: "callout",
+                tone: "tip",
+                title: "How this lesson works",
+                text: "Use Next and Back to move through the screens. Click the cards and panels to open them, and answer the questions as you go.",
+              },
+              { type: "slide", title: "The three kinds of funding" },
+              {
+                type: "reveal",
+                intro: "Open each panel to see what the funding really costs.",
+                items: [
+                  {
+                    title: "Debt",
+                    text: "A loan from a bank or development funder. You keep full ownership, but you pay interest, you usually need security, and repayments start whether or not the business is doing well.",
+                  },
+                  {
+                    title: "Equity",
+                    text: "An investor buys a share of the business. There are no repayments, but you give up part of the ownership, part of future profits, and some control over decisions.",
+                  },
+                  {
+                    title: "Grants",
+                    text: "Money you do not repay, usually from government or a corporate programme. The cost is time: long applications, strict conditions, and detailed reporting on how it was spent.",
+                  },
+                ],
+              },
+              { type: "slide", title: "Key terms" },
+              {
+                type: "flashcards",
+                intro: "Click a card to turn it over.",
+                cards: [
+                  {
+                    front: "Security",
+                    back: "An asset the lender can claim if you do not repay, such as property, equipment or debtors.",
+                  },
+                  {
+                    front: "Dilution",
+                    back: "The reduction in your percentage ownership when new shares are issued to an investor.",
+                  },
+                  {
+                    front: "Mandate",
+                    back: "The deal size, sector and business stage that a particular funder is set up to finance.",
+                  },
+                ],
+              },
+              { type: "slide", title: "Check your understanding" },
+              {
+                type: "quiz",
+                question:
+                  "A profitable business with steady cash flow wants to buy a delivery vehicle and the owners do not want to give up any ownership. Which funding fits best?",
+                options: ["Equity from an investor", "Debt, such as asset finance", "A grant"],
+                correctIndex: 1,
+                explanation:
+                  "Steady cash flow can service repayments, the vehicle itself can act as security, and debt leaves ownership untouched.",
+              },
+              {
+                type: "quiz",
+                question: "What is the main cost of grant funding?",
+                options: ["Interest", "Loss of ownership", "Time and reporting effort"],
+                correctIndex: 2,
+                explanation:
+                  "Grants are not repaid and do not dilute ownership, but applications and compliance reporting take significant time.",
+              },
+              { type: "slide", title: "The three questions" },
+              {
+                type: "text",
+                markdown:
+                  "Before approaching anyone, answer these:\n\n- How much do you need, and what exactly will it pay for?\n- When will the business be able to repay or return it?\n- What are you prepared to give up in exchange?",
+              },
+              {
+                type: "callout",
+                tone: "important",
+                title: "Why this matters",
+                text: "The most common reason applications fail is asking the wrong kind of funder for the wrong kind of money.",
+              },
+              { type: "slide", title: "Exercise" },
+              {
+                type: "exercise",
+                title: "Write your funding brief",
+                text: "Write one page answering the three questions for your own business. You will build on this brief in every lesson that follows.",
+              },
+            ],
           },
           {
             id: id(7, 2),
@@ -326,8 +432,9 @@ export const seedCourses: SeedCourse[] = [
             duration_minutes: 22,
             is_preview: false,
             sort_order: 2,
-            video_url: null,
-            body: "## The funding landscape\n\nSouth African businesses can draw on commercial banks, development finance institutions, enterprise and supplier development programmes, private investors and grant schemes.\n\n## Matching funder to need\n\nEach funder has a mandate: a deal size, a sector focus and a stage they prefer. Applying outside a funder's mandate is the most common reason for rejection.\n\n## Exercise\n\nList five funders whose mandate matches your funding brief.",
+            blocks: slidesFromNotes(
+              "## The funding landscape\n\nSouth African businesses can draw on commercial banks, development finance institutions, enterprise and supplier development programmes, private investors and grant schemes.\n\n## Matching funder to need\n\nEach funder has a mandate: a deal size, a sector focus and a stage they prefer. Applying outside a funder's mandate is the most common reason for rejection.\n\n## Exercise\n\nList five funders whose mandate matches your funding brief.",
+            ),
           },
         ],
       },
@@ -342,8 +449,9 @@ export const seedCourses: SeedCourse[] = [
             duration_minutes: 35,
             is_preview: false,
             sort_order: 1,
-            video_url: null,
-            body: "## Why funders want a model\n\nA model shows that you understand what drives your revenue and costs, and that the business can service the funding.\n\n## Structure\n\n- Assumptions sheet\n- Income statement\n- Cash flow\n- Balance sheet\n- Funding and repayment schedule\n\n## Exercise\n\nComplete the assumptions sheet for your own business.",
+            blocks: slidesFromNotes(
+              "## Why funders want a model\n\nA model shows that you understand what drives your revenue and costs, and that the business can service the funding.\n\n## Structure\n\n- Assumptions sheet\n- Income statement\n- Cash flow\n- Balance sheet\n- Funding and repayment schedule\n\n## Exercise\n\nComplete the assumptions sheet for your own business.",
+            ),
           },
           {
             id: id(7, 4),
@@ -351,8 +459,9 @@ export const seedCourses: SeedCourse[] = [
             duration_minutes: 20,
             is_preview: false,
             sort_order: 2,
-            video_url: null,
-            body: "## Expect the hard questions\n\nFunders will ask what happens if sales come in 20% lower or a major customer pays late.\n\n## Exercise\n\nRun three scenarios through your model: base case, slow sales and delayed payment. Note the lowest cash balance in each.",
+            blocks: slidesFromNotes(
+              "## Expect the hard questions\n\nFunders will ask what happens if sales come in 20% lower or a major customer pays late.\n\n## Exercise\n\nRun three scenarios through your model: base case, slow sales and delayed payment. Note the lowest cash balance in each.",
+            ),
           },
         ],
       },
@@ -367,8 +476,9 @@ export const seedCourses: SeedCourse[] = [
             duration_minutes: 28,
             is_preview: false,
             sort_order: 1,
-            video_url: null,
-            body: "## Ten slides\n\nProblem, solution, market, business model, traction, team, competition, financials, the ask, and use of funds.\n\n## Exercise\n\nDraft all ten slides using your funding brief and model.",
+            blocks: slidesFromNotes(
+              "## Ten slides\n\nProblem, solution, market, business model, traction, team, competition, financials, the ask, and use of funds.\n\n## Exercise\n\nDraft all ten slides using your funding brief and model.",
+            ),
           },
           {
             id: id(7, 6),
@@ -376,8 +486,9 @@ export const seedCourses: SeedCourse[] = [
             duration_minutes: 24,
             is_preview: false,
             sort_order: 2,
-            video_url: null,
-            body: "## What goes in a data room\n\nCompany documents, tax clearance, financial statements, management accounts, key contracts, and compliance certificates.\n\n## Exercise\n\nUse the checklist to assemble your data room and mark any gaps.",
+            blocks: slidesFromNotes(
+              "## What goes in a data room\n\nCompany documents, tax clearance, financial statements, management accounts, key contracts, and compliance certificates.\n\n## Exercise\n\nUse the checklist to assemble your data room and mark any gaps.",
+            ),
           },
         ],
       },
@@ -416,8 +527,9 @@ export const seedCourses: SeedCourse[] = [
             duration_minutes: 20,
             is_preview: true,
             sort_order: 1,
-            video_url: null,
-            body: "## Revenue to profit\n\nThe income statement tells the story of a period: what you sold, what it cost to deliver, what it cost to run the business, and what was left.\n\n## Exercise\n\nTake your own department's latest report and identify gross profit and operating profit.",
+            blocks: slidesFromNotes(
+              "## Revenue to profit\n\nThe income statement tells the story of a period: what you sold, what it cost to deliver, what it cost to run the business, and what was left.\n\n## Exercise\n\nTake your own department's latest report and identify gross profit and operating profit.",
+            ),
           },
           {
             id: id(7, 8),
@@ -425,8 +537,9 @@ export const seedCourses: SeedCourse[] = [
             duration_minutes: 25,
             is_preview: false,
             sort_order: 2,
-            video_url: null,
-            body: "## Profit is not cash\n\nA sale on 60-day terms is profit today and cash in two months. Stock you bought is cash out today and a cost only when it sells.\n\n## Exercise\n\nCalculate how many days it takes your business to turn a sale into cash.",
+            blocks: slidesFromNotes(
+              "## Profit is not cash\n\nA sale on 60-day terms is profit today and cash in two months. Stock you bought is cash out today and a cost only when it sells.\n\n## Exercise\n\nCalculate how many days it takes your business to turn a sale into cash.",
+            ),
           },
         ],
       },
@@ -441,8 +554,9 @@ export const seedCourses: SeedCourse[] = [
             duration_minutes: 30,
             is_preview: false,
             sort_order: 1,
-            video_url: null,
-            body: "## Start from drivers\n\nA good budget starts from what drives the numbers: volumes, prices, headcount and rates.\n\n## Exercise\n\nBuild next quarter's budget for your area from its drivers.",
+            blocks: slidesFromNotes(
+              "## Start from drivers\n\nA good budget starts from what drives the numbers: volumes, prices, headcount and rates.\n\n## Exercise\n\nBuild next quarter's budget for your area from its drivers.",
+            ),
           },
         ],
       },
@@ -480,8 +594,9 @@ export const seedCourses: SeedCourse[] = [
             duration_minutes: 15,
             is_preview: true,
             sort_order: 1,
-            video_url: null,
-            body: "## The short version\n\nIf your business collects, stores or uses information about identifiable people or companies, POPIA applies to you.\n\n## Personal information\n\nNames, contact details, ID numbers, employment history, financial details and opinions about a person all count.",
+            blocks: slidesFromNotes(
+              "## The short version\n\nIf your business collects, stores or uses information about identifiable people or companies, POPIA applies to you.\n\n## Personal information\n\nNames, contact details, ID numbers, employment history, financial details and opinions about a person all count.",
+            ),
           },
           {
             id: id(7, 11),
@@ -489,11 +604,47 @@ export const seedCourses: SeedCourse[] = [
             duration_minutes: 20,
             is_preview: false,
             sort_order: 2,
-            video_url: null,
-            body: "## Five steps\n\n- Appoint and register your Information Officer\n- Map the personal information you hold\n- Publish a privacy notice\n- Secure the information\n- Decide how you will respond to a breach\n\n## Exercise\n\nComplete the one-page data map template for your business.",
+            blocks: slidesFromNotes(
+              "## Five steps\n\n- Appoint and register your Information Officer\n- Map the personal information you hold\n- Publish a privacy notice\n- Secure the information\n- Decide how you will respond to a breach\n\n## Exercise\n\nComplete the one-page data map template for your business.",
+            ),
           },
         ],
       },
     ],
+  },
+];
+
+export const seedLiveSessions: (LiveSession & { join_url: string })[] = [
+  {
+    id: id(8, 1),
+    slug: "funding-clinic",
+    title: "Funding Clinic: Ask a Partner Anything",
+    summary:
+      "A free live question-and-answer session on raising debt, equity and grant funding in South Africa.",
+    description:
+      "Bring your funding questions and put them to a partner directly. We open with a 15-minute overview of the current funding landscape, then spend the rest of the hour on your questions.\n\nOpen to everyone. Register to receive the joining link.",
+    presenter: "Thandi Mokoena",
+    starts_at: "2027-01-21T16:00:00+02:00",
+    duration_minutes: 60,
+    platform: "Zoom",
+    capacity: 100,
+    sort_order: 1,
+    join_url: "",
+  },
+  {
+    id: id(8, 2),
+    slug: "reading-your-numbers",
+    title: "Reading Your Numbers: A Live Workshop",
+    summary:
+      "Work through a real set of management accounts with a partner and learn what to look for each month.",
+    description:
+      "A practical workshop for owners and managers. We walk through an anonymised set of management accounts line by line and show you the five checks to run every month.\n\nOpen to everyone. Register to receive the joining link.",
+    presenter: "David Naidoo",
+    starts_at: "2027-02-04T10:00:00+02:00",
+    duration_minutes: 90,
+    platform: "Zoom",
+    capacity: null,
+    sort_order: 2,
+    join_url: "",
   },
 ];

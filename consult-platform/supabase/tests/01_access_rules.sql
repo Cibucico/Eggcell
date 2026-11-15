@@ -36,6 +36,9 @@ select pg_temp.expect(
   (select count(*) from public.lesson_contents) = (select count(*) from public.lessons where is_preview),
   'anon reads preview lesson bodies only');
 select pg_temp.expect((select count(*) = 0 from public.profiles), 'anon cannot read profiles');
+select pg_temp.expect((select count(*) = 2 from public.live_sessions), 'anon reads published live sessions');
+select pg_temp.expect((select count(*) = 0 from public.live_session_links), 'anon cannot read joining links');
+select pg_temp.fails($$select public.register_for_live_session((select id from public.live_sessions limit 1))$$, 'anon cannot register for a live session');
 
 insert into public.enquiries (name, email, message, consent) values ('A Visitor', 'v@example.test', 'Hello', true);
 select pg_temp.expect((select count(*) = 0 from public.enquiries), 'anon cannot read enquiries back');
@@ -90,11 +93,28 @@ select pg_temp.expect((select count(*) = 1 from public.bookings), 'member sees o
 update public.bookings set status = 'confirmed';
 select pg_temp.expect((select status = 'requested' from public.bookings), 'member cannot confirm own booking');
 
+-- live sessions
+select pg_temp.expect((select count(*) = 0 from public.live_session_links), 'joining link hidden before registering');
+select pg_temp.fails($$insert into public.live_registrations (user_id, session_id) select auth.uid(), id from public.live_sessions limit 1$$, 'cannot register by direct insert');
+select public.register_for_live_session((select id from public.live_sessions where capacity is null limit 1));
+select public.register_for_live_session((select id from public.live_sessions where capacity is null limit 1));
+select pg_temp.expect((select count(*) = 1 from public.live_registrations), 'registering twice keeps one registration');
+select pg_temp.expect((select count(*) = 1 from public.live_session_links), 'joining link visible after registering');
+select pg_temp.expect((select sum(taken) = 1 from public.live_session_places_taken()), 'places taken are counted');
+
 -- ---- another member -----------------------------------------------------
 select set_config('request.jwt.claim.sub', '33333333-3333-4333-8333-333333333333', false);
 select pg_temp.expect((select count(*) = 0 from public.enrolments), 'members cannot see each other''s enrolments');
 select pg_temp.expect((select count(*) = 0 from public.bookings), 'members cannot see each other''s bookings');
 select pg_temp.expect((select count(*) = 0 from public.certificates), 'members cannot list each other''s certificates');
+
+select pg_temp.expect((select count(*) = 0 from public.live_registrations), 'members cannot see each other''s registrations');
+reset role;
+update public.live_sessions set capacity = 1 where capacity is null;
+update public.live_sessions set starts_at = now() - interval '2 days' where slug = 'funding-clinic';
+set role authenticated;
+select pg_temp.fails($$select public.register_for_live_session((select id from public.live_sessions where slug = 'reading-your-numbers'))$$, 'full session rejects new registrations');
+select pg_temp.fails($$select public.register_for_live_session((select id from public.live_sessions where slug = 'funding-clinic'))$$, 'ended session rejects registrations');
 
 -- ---- payment completion (server, secret key) ----------------------------
 reset role;

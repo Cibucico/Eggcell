@@ -203,8 +203,9 @@ create index lessons_module_id_idx on public.lessons (module_id);
 
 create table public.lesson_contents (
   lesson_id uuid primary key references public.lessons (id) on delete cascade,
-  body text not null default '',
-  video_url text,
+  -- Ordered list of content blocks (text, video, reveal, flashcards, quiz,
+  -- embed ...). A "slide" block starts a new screen. See src/lib/blocks.ts.
+  blocks jsonb not null default '[]'::jsonb check (jsonb_typeof(blocks) = 'array'),
   updated_at timestamptz not null default now()
 );
 
@@ -259,6 +260,46 @@ create table public.certificates (
   unique (user_id, course_id)
 );
 create index certificates_course_id_idx on public.certificates (course_id);
+
+-- ---------------------------------------------------------------------------
+-- Live training sessions (held on Zoom, Teams or similar)
+-- ---------------------------------------------------------------------------
+create table public.live_sessions (
+  id uuid primary key default gen_random_uuid(),
+  slug text not null unique check (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
+  title text not null,
+  summary text not null default '',
+  description text not null default '',
+  presenter text not null default '',
+  starts_at timestamptz not null,
+  duration_minutes integer not null default 60 check (duration_minutes > 0),
+  platform text not null default 'Zoom',
+  -- null means unlimited places
+  capacity integer check (capacity is null or capacity > 0),
+  sort_order integer not null default 0,
+  published boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index live_sessions_starts_at_idx on public.live_sessions (starts_at);
+
+-- The joining link is kept apart from the public listing so that only people
+-- who have registered can see it.
+create table public.live_session_links (
+  session_id uuid primary key references public.live_sessions (id) on delete cascade,
+  join_url text not null default '',
+  passcode text,
+  recording_url text,
+  updated_at timestamptz not null default now()
+);
+
+create table public.live_registrations (
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  session_id uuid not null references public.live_sessions (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (user_id, session_id)
+);
+create index live_registrations_session_id_idx on public.live_registrations (session_id);
 
 -- ---------------------------------------------------------------------------
 -- Leads: enquiries, bookings, investor interest
@@ -331,6 +372,7 @@ begin
   foreach t in array array[
     'services', 'team_members', 'case_studies', 'testimonials', 'courses',
     'course_modules', 'lessons', 'lesson_contents', 'orders', 'enrolments',
+    'live_sessions', 'live_session_links',
     'enquiries', 'bookings', 'investor_leads'
   ]
   loop
@@ -406,6 +448,9 @@ alter table public.orders enable row level security;
 alter table public.enrolments enable row level security;
 alter table public.lesson_progress enable row level security;
 alter table public.certificates enable row level security;
+alter table public.live_sessions enable row level security;
+alter table public.live_session_links enable row level security;
+alter table public.live_registrations enable row level security;
 alter table public.enquiries enable row level security;
 alter table public.bookings enable row level security;
 alter table public.investor_leads enable row level security;
@@ -448,7 +493,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['services', 'team_members', 'case_studies', 'testimonials', 'courses']
+  foreach t in array array['services', 'team_members', 'case_studies', 'testimonials', 'courses', 'live_sessions']
   loop
     execute format(
       'create policy %I on public.%I for select to anon, authenticated using (published or (select private.is_admin()))',
@@ -537,6 +582,83 @@ create policy "lesson_progress: delete own" on public.lesson_progress
   for delete to authenticated
   using (user_id = (select auth.uid()));
 revoke update on public.lesson_progress from anon, authenticated;
+
+-- Live sessions: the listing is public (policies created above); the joining
+-- link is visible only to registered users.
+create policy "live_session_links: read if registered" on public.live_session_links
+  for select to authenticated
+  using (
+    (select private.is_admin())
+    or exists (
+      select 1 from public.live_registrations r
+      where r.session_id = live_session_links.session_id and r.user_id = (select auth.uid())
+    )
+  );
+create policy "live_session_links: admin insert" on public.live_session_links
+  for insert to authenticated with check ((select private.is_admin()));
+create policy "live_session_links: admin update" on public.live_session_links
+  for update to authenticated using ((select private.is_admin())) with check ((select private.is_admin()));
+create policy "live_session_links: admin delete" on public.live_session_links
+  for delete to authenticated using ((select private.is_admin()));
+
+create policy "live_registrations: read own or admin" on public.live_registrations
+  for select to authenticated
+  using (user_id = (select auth.uid()) or (select private.is_admin()));
+create policy "live_registrations: cancel own" on public.live_registrations
+  for delete to authenticated
+  using (user_id = (select auth.uid()));
+-- Registration goes through register_for_live_session() so capacity is enforced.
+revoke insert, update on public.live_registrations from anon, authenticated;
+
+create or replace function public.register_for_live_session(p_session_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user uuid := (select auth.uid());
+  v_session public.live_sessions%rowtype;
+  v_taken integer;
+begin
+  if v_user is null then
+    raise exception 'Not signed in' using errcode = '42501';
+  end if;
+  -- Lock the session row so two people cannot take the last place at once.
+  select * into v_session from public.live_sessions
+    where id = p_session_id and published for update;
+  if not found then
+    raise exception 'SESSION_NOT_FOUND';
+  end if;
+  if v_session.starts_at + make_interval(mins => v_session.duration_minutes) < now() then
+    raise exception 'SESSION_ENDED';
+  end if;
+  if exists (select 1 from public.live_registrations where user_id = v_user and session_id = p_session_id) then
+    return;
+  end if;
+  if v_session.capacity is not null then
+    select count(*) into v_taken from public.live_registrations where session_id = p_session_id;
+    if v_taken >= v_session.capacity then
+      raise exception 'SESSION_FULL';
+    end if;
+  end if;
+  insert into public.live_registrations (user_id, session_id) values (v_user, p_session_id);
+end;
+$$;
+revoke execute on function public.register_for_live_session(uuid) from public, anon;
+grant execute on function public.register_for_live_session(uuid) to authenticated;
+
+-- Places taken per session, for "x places left" on the public listing.
+create or replace function public.live_session_places_taken()
+returns table (session_id uuid, taken bigint)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select r.session_id, count(*) from public.live_registrations r group by r.session_id;
+$$;
+grant execute on function public.live_session_places_taken() to anon, authenticated;
 
 -- Certificates are issued by the server and are publicly verifiable by serial
 -- through verify_certificate() below; the table itself is private.

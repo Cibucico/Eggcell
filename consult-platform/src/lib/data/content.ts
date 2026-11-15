@@ -3,6 +3,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import {
   seedCaseStudies,
   seedCourses,
+  seedLiveSessions,
   seedServices,
   seedTeam,
   seedTestimonials,
@@ -13,6 +14,7 @@ import type {
   CaseStudy,
   Course,
   CourseWithOutline,
+  LiveSession,
   ModuleOutline,
   Service,
   TeamMember,
@@ -137,7 +139,7 @@ export async function getCourseWithOutline(slug: string): Promise<CourseWithOutl
       ...course,
       modules: course.modules.map((m) => ({
         ...m,
-        lessons: m.lessons.map(({ body: _body, video_url: _video, ...lesson }) => lesson),
+        lessons: m.lessons.map(({ blocks: _blocks, ...lesson }) => lesson),
       })),
     };
   }
@@ -156,6 +158,58 @@ export async function getCourseWithOutline(slug: string): Promise<CourseWithOutl
     .sort(bySort)
     .map((m) => ({ ...m, lessons: [...(m.lessons ?? [])].sort(bySort) }));
   return { ...course, modules };
+}
+
+const LIVE_COLS =
+  "id, slug, title, summary, description, presenter, starts_at, duration_minutes, platform, capacity, sort_order";
+
+export type LiveSessionListing = LiveSession & { places_left: number | null };
+
+/**
+ * Published live sessions that have not finished yet, soonest first.
+ * Cached briefly so "places left" stays reasonably current.
+ */
+export async function getUpcomingLiveSessions(): Promise<LiveSessionListing[]> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("live_sessions");
+  if (!isSupabaseConfigured) {
+    return seedLiveSessions.map(({ join_url: _join, ...session }) => ({
+      ...session,
+      places_left: session.capacity,
+    }));
+  }
+  const supabase = createPublicClient();
+  // Include sessions that started up to six hours ago so one in progress still shows.
+  const since = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+  const [sessions, taken] = await Promise.all([
+    supabase
+      .from("live_sessions")
+      .select(LIVE_COLS)
+      .eq("published", true)
+      .gte("starts_at", since)
+      .order("starts_at"),
+    supabase.rpc("live_session_places_taken"),
+  ]);
+  if (sessions.error) fail("live sessions", sessions.error.message);
+  const counts = new Map<string, number>(
+    ((taken.data ?? []) as { session_id: string; taken: number }[]).map((row) => [
+      row.session_id,
+      Number(row.taken),
+    ]),
+  );
+  const now = Date.now();
+  return (sessions.data as LiveSession[])
+    .filter((s) => new Date(s.starts_at).getTime() + s.duration_minutes * 60_000 > now)
+    .map((s) => ({
+      ...s,
+      places_left: s.capacity == null ? null : Math.max(0, s.capacity - (counts.get(s.id) ?? 0)),
+    }));
+}
+
+export async function getLiveSession(slug: string): Promise<LiveSessionListing | null> {
+  const sessions = await getUpcomingLiveSessions();
+  return sessions.find((s) => s.slug === slug) ?? null;
 }
 
 export function countLessons(course: CourseWithOutline): number {
