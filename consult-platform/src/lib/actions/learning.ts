@@ -18,7 +18,7 @@ export async function enrolInFreeCourse(formData: FormData) {
   await requireUser(`/enrol/${courseSlug}`);
   const course = await getCourseWithOutline(courseSlug);
   if (!course) redirect("/training");
-  if (course.price_cents > 0) redirect(`/checkout/${courseSlug}`);
+  if (course.price_cents > 0) redirect(`/checkout/course/${courseSlug}`);
 
   const supabase = await createClient();
   const { error } = await supabase.rpc("enrol_free", { p_course_id: course.id });
@@ -62,6 +62,7 @@ const LIVE_ERRORS: Record<string, string> = {
   SESSION_FULL: "full",
   SESSION_ENDED: "ended",
   SESSION_NOT_FOUND: "missing",
+  SESSION_PAID: "paid",
 };
 
 export async function registerForLiveSession(formData: FormData) {

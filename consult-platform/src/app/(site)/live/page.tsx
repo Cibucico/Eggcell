@@ -8,7 +8,7 @@ import { getUpcomingLiveSessions } from "@/lib/data/content";
 
 export const metadata: Metadata = {
   title: "Live sessions",
-  description: `Free live online sessions with the ${brand.name} team.`,
+  description: `Live online sessions with the ${brand.name} team.`,
 };
 
 export default async function LivePage() {
@@ -19,7 +19,7 @@ export default async function LivePage() {
       <PageHeader
         eyebrow="Live sessions"
         title="Join us live"
-        intro="Free online sessions with our partners, open to everyone. Register to get the joining link and a place in the room."
+        intro="Live online sessions with our partners. Register to get the joining link and a place in the room."
       />
       <Section>
         {sessions.length === 0 ? (

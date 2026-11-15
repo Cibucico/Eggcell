@@ -111,6 +111,8 @@ export type MyBooking = {
   mode: "online" | "in_person";
   status: BookingStatus;
   meeting_link: string | null;
+  deposit_cents: number;
+  deposit_paid_at: string | null;
   service: { title: string } | null;
 };
 
@@ -120,7 +122,7 @@ export async function getMyBookings(): Promise<MyBooking[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("bookings")
-    .select("id, preferred_date, preferred_time, mode, status, meeting_link, service:services(title)")
+    .select("id, preferred_date, preferred_time, mode, status, meeting_link, deposit_cents, deposit_paid_at, service:services(title)")
     .eq("user_id", user.id)
     .order("preferred_date", { ascending: false })
     .limit(20);
@@ -156,7 +158,7 @@ export async function getMyLiveSessions(): Promise<MyLiveSession[]> {
   const { data, error } = await supabase
     .from("live_registrations")
     .select(
-      "session:live_sessions(id, slug, title, summary, description, presenter, starts_at, duration_minutes, platform, capacity, sort_order, link:live_session_links(join_url, passcode, recording_url))",
+      "session:live_sessions(id, slug, title, summary, description, presenter, starts_at, duration_minutes, platform, price_cents, capacity, sort_order, link:live_session_links(join_url, passcode, recording_url))",
     )
     .eq("user_id", user.id);
   if (error) throw new Error(`Could not load your live sessions: ${error.message}`);

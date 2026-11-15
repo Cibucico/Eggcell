@@ -62,7 +62,10 @@ select pg_temp.expect((select full_name = 'Lebo L' from public.profiles), 'membe
 select pg_temp.fails($$update public.profiles set role = 'admin' where id = '22222222-2222-4222-8222-222222222222'$$, 'member cannot promote self');
 select pg_temp.fails($$select public.set_user_role('22222222-2222-4222-8222-222222222222', 'admin')$$, 'member cannot call set_user_role');
 select pg_temp.fails($$insert into public.enrolments (user_id, course_id) select auth.uid(), id from public.courses where price_cents > 0 limit 1$$, 'member cannot self-enrol in a paid course');
-select pg_temp.fails($$insert into public.orders (user_id, course_id, amount_cents, status) select auth.uid(), id, 0, 'paid' from public.courses limit 1$$, 'member cannot create orders');
+select pg_temp.fails($$insert into public.orders (user_id, kind, course_id, subtotal_cents, amount_cents, status) select auth.uid(), 'course', id, 0, 0, 'paid' from public.courses limit 1$$, 'member cannot create orders');
+select pg_temp.fails($$select public.create_order(auth.uid(), 'course', (select id from public.courses limit 1))$$, 'member cannot call create_order');
+select pg_temp.expect((select count(*) = 0 from public.discount_codes), 'member cannot read discount codes');
+select pg_temp.fails($$select public.register_for_live_session((select id from public.live_sessions where price_cents > 0 limit 1))$$, 'paid session cannot be joined for free');
 select pg_temp.fails($$select public.enrol_free((select id from public.courses where price_cents > 0 limit 1))$$, 'enrol_free rejects paid courses');
 select pg_temp.fails($$insert into public.lesson_progress (user_id, lesson_id, course_id) select auth.uid(), id, course_id from public.lessons limit 1$$, 'no progress without enrolment');
 
@@ -96,8 +99,8 @@ select pg_temp.expect((select status = 'requested' from public.bookings), 'membe
 -- live sessions
 select pg_temp.expect((select count(*) = 0 from public.live_session_links), 'joining link hidden before registering');
 select pg_temp.fails($$insert into public.live_registrations (user_id, session_id) select auth.uid(), id from public.live_sessions limit 1$$, 'cannot register by direct insert');
-select public.register_for_live_session((select id from public.live_sessions where capacity is null limit 1));
-select public.register_for_live_session((select id from public.live_sessions where capacity is null limit 1));
+select public.register_for_live_session((select id from public.live_sessions where price_cents = 0 limit 1));
+select public.register_for_live_session((select id from public.live_sessions where price_cents = 0 limit 1));
 select pg_temp.expect((select count(*) = 1 from public.live_registrations), 'registering twice keeps one registration');
 select pg_temp.expect((select count(*) = 1 from public.live_session_links), 'joining link visible after registering');
 select pg_temp.expect((select sum(taken) = 1 from public.live_session_places_taken()), 'places taken are counted');
@@ -110,21 +113,68 @@ select pg_temp.expect((select count(*) = 0 from public.certificates), 'members c
 
 select pg_temp.expect((select count(*) = 0 from public.live_registrations), 'members cannot see each other''s registrations');
 reset role;
-update public.live_sessions set capacity = 1 where capacity is null;
-update public.live_sessions set starts_at = now() - interval '2 days' where slug = 'funding-clinic';
+update public.live_sessions set capacity = 1, price_cents = 0;
+update public.live_sessions set starts_at = now() - interval '2 days' where slug = 'reading-your-numbers';
 set role authenticated;
-select pg_temp.fails($$select public.register_for_live_session((select id from public.live_sessions where slug = 'reading-your-numbers'))$$, 'full session rejects new registrations');
-select pg_temp.fails($$select public.register_for_live_session((select id from public.live_sessions where slug = 'funding-clinic'))$$, 'ended session rejects registrations');
+select pg_temp.fails($$select public.register_for_live_session((select id from public.live_sessions where slug = 'funding-clinic'))$$, 'full session rejects new registrations');
+select pg_temp.fails($$select public.register_for_live_session((select id from public.live_sessions where slug = 'reading-your-numbers'))$$, 'ended session rejects registrations');
 
--- ---- payment completion (server, secret key) ----------------------------
+-- ---- payments (server, secret key) -------------------------------------
 reset role;
-insert into public.orders (id, user_id, course_id, amount_cents)
-  select 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '33333333-3333-4333-8333-333333333333', id, price_cents
-  from public.courses where price_cents > 0 order by sort_order limit 1;
+insert into public.discount_codes (code, kind, value) values ('HALF', 'percent', 50), ('ONCE', 'amount', 10000);
+update public.discount_codes set max_uses = 1 where code = 'ONCE';
+insert into public.discount_codes (code, kind, value, expires_at) values ('OLD', 'percent', 10, now() - interval '1 day');
+update public.services set booking_deposit_cents = 50000 where slug = 'business-strategy';
+update public.live_sessions set price_cents = 45000, capacity = 5, starts_at = now() + interval '5 days' where slug = 'funding-clinic';
+
 set role service_role;
-select pg_temp.expect(public.complete_order('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'pf-1') = 'paid', 'order completes');
-select pg_temp.expect(public.complete_order('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'pf-1') = 'paid', 'completing twice is harmless');
+select set_config('test.course', (select id::text from public.courses where price_cents > 0 order by sort_order limit 1), false);
+select set_config('test.order', public.create_order('33333333-3333-4333-8333-333333333333', 'course', current_setting('test.course')::uuid, 'half')::text, false);
+select pg_temp.expect((select amount_cents * 2 = subtotal_cents and status = 'pending' from public.orders where id = current_setting('test.order')::uuid), 'order priced from the database with 50% off');
+select pg_temp.fails($$select public.create_order('33333333-3333-4333-8333-333333333333', 'course', current_setting('test.course')::uuid, 'OLD')$$, 'expired discount code rejected');
+select pg_temp.fails($$select public.create_order('33333333-3333-4333-8333-333333333333', 'course', current_setting('test.course')::uuid, 'NOPE')$$, 'unknown discount code rejected');
+select pg_temp.expect(public.complete_order(current_setting('test.order')::uuid, 'pf-1') = 'paid', 'order completes');
+select pg_temp.expect(public.complete_order(current_setting('test.order')::uuid, 'pf-1') = 'paid', 'completing twice is harmless');
 select pg_temp.expect((select count(*) = 1 from public.enrolments where user_id = '33333333-3333-4333-8333-333333333333'), 'payment enrols the buyer exactly once');
+select pg_temp.expect((select used_count = 1 from public.discount_codes where code = 'HALF'), 'discount use counted once');
+select pg_temp.fails($$select public.create_order('33333333-3333-4333-8333-333333333333', 'course', current_setting('test.course')::uuid)$$, 'cannot buy a course twice');
+
+-- paid live session
+select set_config('test.order', public.create_order('33333333-3333-4333-8333-333333333333', 'live_session', (select id from public.live_sessions where slug = 'funding-clinic'), 'ONCE')::text, false);
+select pg_temp.expect((select amount_cents = 35000 from public.orders where id = current_setting('test.order')::uuid), 'amount discount applied to live session');
+select public.complete_order(current_setting('test.order')::uuid, 'pf-2');
+select pg_temp.expect((select count(*) = 1 from public.live_registrations where user_id = '33333333-3333-4333-8333-333333333333'), 'paying registers the buyer for the session');
+select pg_temp.fails($$select public.create_order('22222222-2222-4222-8222-222222222222', 'live_session', (select id from public.live_sessions where slug = 'funding-clinic'), 'ONCE')$$, 'used-up discount code rejected');
+
+-- consultation deposit
+reset role;
+set role authenticated;
+select set_config('request.jwt.claim.sub', '22222222-2222-4222-8222-222222222222', false);
+insert into public.bookings (user_id, service_id, name, email, preferred_date, preferred_time, consent, deposit_cents, deposit_paid_at)
+  select auth.uid(), id, 'Lebo', 'learner@example.test', current_date + 9, '09:00', true, 0, now() from public.services where slug = 'business-strategy';
+select pg_temp.expect((select deposit_cents = 50000 and deposit_paid_at is null from public.bookings where preferred_time = '09:00'), 'deposit is set from the service, not the form');
+set role service_role;
+select pg_temp.fails($$select public.create_order('33333333-3333-4333-8333-333333333333', 'consultation', (select id from public.bookings where preferred_time = '09:00'))$$, 'cannot pay a deposit on someone else''s booking');
+select set_config('test.order', public.create_order('22222222-2222-4222-8222-222222222222', 'consultation', (select id from public.bookings where preferred_time = '09:00'))::text, false);
+select public.complete_order(current_setting('test.order')::uuid, 'pf-3');
+select pg_temp.expect((select deposit_paid_at is not null from public.bookings where preferred_time = '09:00'), 'paying marks the deposit paid');
+select pg_temp.fails($$select public.create_order('22222222-2222-4222-8222-222222222222', 'consultation', (select id from public.bookings where preferred_time = '09:00'))$$, 'deposit cannot be paid twice');
+
+-- ---- content editor -----------------------------------------------------
+reset role;
+update public.profiles set role = 'editor' where id = '22222222-2222-4222-8222-222222222222';
+set role authenticated;
+select set_config('request.jwt.claim.sub', '22222222-2222-4222-8222-222222222222', false);
+insert into public.services (slug, title, published) values ('editor-service', 'By an editor', false);
+update public.courses set summary = 'Edited' where slug = 'popia-essentials';
+select pg_temp.expect((select count(*) = 1 from public.courses where summary = 'Edited'), 'editor edits courses');
+select pg_temp.expect((select count(*) = (select count(*) from public.lessons) from public.lesson_contents), 'editor reads all lesson content');
+select pg_temp.expect((select count(*) = 0 from public.enquiries), 'editor cannot read enquiries');
+select pg_temp.expect((select count(*) = 0 from public.investor_leads), 'editor cannot read investor leads');
+select pg_temp.expect((select count(*) = 0 from public.discount_codes), 'editor cannot read discount codes');
+select pg_temp.expect((select count(*) = 1 from public.profiles), 'editor cannot read other profiles');
+select pg_temp.fails($$select public.admin_overview()$$, 'editor cannot read sales overview');
+select pg_temp.fails($$select public.set_user_role('22222222-2222-4222-8222-222222222222', 'admin')$$, 'editor cannot promote self');
 
 -- ---- admin --------------------------------------------------------------
 set role authenticated;
@@ -132,9 +182,10 @@ select set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111
 select pg_temp.expect((select count(*) = 3 from public.profiles), 'admin reads all profiles');
 select pg_temp.expect((select count(*) = 1 from public.enquiries), 'admin reads enquiries');
 select pg_temp.expect((select count(*) = 1 from public.investor_leads), 'admin reads investor leads');
-select pg_temp.expect((select count(*) = 2 from public.bookings), 'admin reads all bookings');
+select pg_temp.expect((select count(*) = 3 from public.bookings), 'admin reads all bookings');
 update public.bookings set status = 'confirmed', meeting_link = 'https://meet.example.test/x';
-select pg_temp.expect((select count(*) = 2 from public.bookings where status = 'confirmed'), 'admin confirms bookings');
+select pg_temp.expect((select count(*) = 3 from public.bookings where status = 'confirmed'), 'admin confirms bookings');
+select pg_temp.expect((select count(*) = 3 from public.discount_codes), 'admin reads discount codes');
 insert into public.services (slug, title, published) values ('draft-service', 'Draft', false);
 update public.services set title = 'Draft 2' where slug = 'draft-service';
 select pg_temp.expect((select (public.admin_overview() ->> 'revenue_cents')::int > 0), 'admin overview reports revenue');

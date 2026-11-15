@@ -28,7 +28,7 @@ import type {
  */
 
 const SERVICE_COLS =
-  "id, slug, title, summary, description, icon, deliverables, price_from_cents, duration_label, featured, sort_order";
+  "id, slug, title, summary, description, icon, deliverables, price_from_cents, duration_label, booking_deposit_cents, featured, sort_order";
 const TEAM_COLS = "id, slug, name, role_title, bio, photo_url, credentials, linkedin_url, sort_order";
 const CASE_COLS =
   "id, slug, title, client_name, industry, summary, challenge, approach, outcome, metrics, sort_order";
@@ -161,7 +161,7 @@ export async function getCourseWithOutline(slug: string): Promise<CourseWithOutl
 }
 
 const LIVE_COLS =
-  "id, slug, title, summary, description, presenter, starts_at, duration_minutes, platform, capacity, sort_order";
+  "id, slug, title, summary, description, presenter, starts_at, duration_minutes, platform, price_cents, capacity, sort_order";
 
 export type LiveSessionListing = LiveSession & { places_left: number | null };
 

@@ -14,7 +14,7 @@ import {
   getMyLiveSessions,
 } from "@/lib/data/member";
 import type { BookingStatus } from "@/lib/types";
-import { formatDate, formatSessionTime } from "@/lib/utils";
+import { formatDate, formatMoney, formatSessionTime } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "My account", robots: { index: false } };
 
@@ -112,7 +112,7 @@ async function Dashboard() {
           {live.length === 0 ? (
             <EmptyState
               title="You are not registered for any live sessions"
-              text="Live sessions are free and open to everyone."
+              text="Join a live online session with our partners."
               action={<ButtonLink href="/live">See upcoming sessions</ButtonLink>}
             />
           ) : (
@@ -191,6 +191,16 @@ async function Dashboard() {
                   </div>
                   <div className="flex flex-wrap items-center gap-3">
                     <BookingBadge status={b.status} />
+                    {b.deposit_cents > 0 &&
+                      (b.deposit_paid_at ? (
+                        <Badge tone="success">Deposit paid</Badge>
+                      ) : (
+                        b.status !== "cancelled" && (
+                          <ButtonLink href={`/checkout/booking/${b.id}`} size="sm" prefetch={false}>
+                            Pay {formatMoney(b.deposit_cents)} deposit
+                          </ButtonLink>
+                        )
+                      ))}
                     {b.status === "confirmed" && b.meeting_link && (
                       <a
                         href={b.meeting_link}

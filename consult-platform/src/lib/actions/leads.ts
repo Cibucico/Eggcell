@@ -1,12 +1,13 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { brand } from "@/config/brand";
 import { getUser } from "@/lib/auth";
 import { notifyTeam, sendEmail } from "@/lib/email";
 import { isSupabaseConfigured, PREVIEW_MESSAGE } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionState } from "@/lib/types";
-import { dateInSouthAfrica, formatDate } from "@/lib/utils";
+import { dateInSouthAfrica, formatDate, formatMoney } from "@/lib/utils";
 import {
   bookingSchema,
   enquirySchema,
@@ -93,9 +94,28 @@ export async function submitBooking(_prev: ActionState, formData: FormData): Pro
   const { consent: _consent, ...values } = parsed.data;
   const user = await getUser();
   const supabase = await createClient();
+
+  // A service can require a deposit, which is paid from the visitor's account.
+  let depositCents = 0;
+  if (values.service_id) {
+    const { data: service } = await supabase
+      .from("services")
+      .select("booking_deposit_cents")
+      .eq("id", values.service_id)
+      .maybeSingle();
+    depositCents = service?.booking_deposit_cents ?? 0;
+  }
+  if (depositCents > 0 && !user) {
+    return {
+      status: "error",
+      message: `A deposit of ${formatMoney(depositCents)} secures this consultation. Please sign in or create a free account first, then request your time again.`,
+    };
+  }
+
+  const bookingId = crypto.randomUUID();
   const { error } = await supabase
     .from("bookings")
-    .insert({ ...values, consent: true, user_id: user?.id ?? null });
+    .insert({ ...values, id: bookingId, consent: true, user_id: user?.id ?? null });
   if (error) {
     console.error("[booking] insert failed", error.message);
     return { status: "error", message: GENERIC_ERROR };
@@ -121,6 +141,7 @@ export async function submitBooking(_prev: ActionState, formData: FormData): Pro
       text: `Hello ${values.name},\n\nThank you for requesting a consultation with ${brand.name}.\n\nRequested time: ${when}\n\nThis time is not confirmed yet. We will email you within one business day to confirm it or suggest an alternative.\n\n${brand.name}\n${brand.contact.phone}`,
     }),
   ]);
+  if (depositCents > 0) redirect(`/checkout/booking/${bookingId}`);
   return success;
 }
 

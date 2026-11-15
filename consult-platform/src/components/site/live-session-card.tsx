@@ -2,7 +2,7 @@ import { CalendarDays, Clock, Users, Video } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/primitives";
 import type { LiveSessionListing } from "@/lib/data/content";
-import { formatDuration, formatSessionTime } from "@/lib/utils";
+import { formatDuration, formatPrice, formatSessionTime } from "@/lib/utils";
 
 export function LiveSessionCard({ session }: { session: LiveSessionListing }) {
   const full = session.places_left === 0;
@@ -16,6 +16,7 @@ export function LiveSessionCard({ session }: { session: LiveSessionListing }) {
           <Video className="h-3 w-3" aria-hidden />
           Live on {session.platform}
         </Badge>
+        <Badge tone={session.price_cents === 0 ? "success" : "neutral"}>{formatPrice(session.price_cents)}</Badge>
         {full && <Badge tone="danger">Fully booked</Badge>}
       </div>
       <h3 className="mt-4 text-xl font-semibold leading-snug">{session.title}</h3>

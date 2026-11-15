@@ -6,7 +6,11 @@ create extension if not exists pgcrypto with schema extensions;
 -- ---------------------------------------------------------------------------
 -- Enums
 -- ---------------------------------------------------------------------------
-create type public.user_role as enum ('member', 'admin');
+-- member: a client or learner. editor: may manage courses, live sessions and
+-- website content. admin: everything, including leads, payments and users.
+create type public.user_role as enum ('member', 'editor', 'admin');
+create type public.order_kind as enum ('course', 'live_session', 'consultation');
+create type public.discount_kind as enum ('percent', 'amount');
 create type public.course_format as enum ('self_paced', 'live', 'hybrid');
 create type public.enrolment_status as enum ('active', 'completed', 'refunded');
 create type public.order_status as enum ('pending', 'paid', 'failed', 'cancelled');
@@ -63,6 +67,20 @@ as $$
   );
 $$;
 
+-- Admins and content editors.
+create or replace function private.is_staff()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.profiles
+    where id = (select auth.uid()) and role in ('admin', 'editor')
+  );
+$$;
+
 -- Create a profile whenever someone signs up.
 create or replace function private.handle_new_user()
 returns trigger
@@ -101,6 +119,8 @@ create table public.services (
   deliverables text[] not null default '{}',
   price_from_cents integer check (price_from_cents is null or price_from_cents >= 0),
   duration_label text,
+  -- Deposit taken online when a consultation for this service is booked. 0 = none.
+  booking_deposit_cents integer not null default 0 check (booking_deposit_cents >= 0),
   featured boolean not null default false,
   sort_order integer not null default 0,
   published boolean not null default true,
@@ -209,21 +229,50 @@ create table public.lesson_contents (
   updated_at timestamptz not null default now()
 );
 
+create table public.discount_codes (
+  id uuid primary key default gen_random_uuid(),
+  code text not null unique check (code ~ '^[A-Z0-9]{3,32}$'),
+  description text not null default '',
+  kind public.discount_kind not null default 'percent',
+  -- percent: 1 to 100. amount: cents off.
+  value integer not null check (value > 0),
+  -- null = valid for everything
+  applies_to public.order_kind,
+  max_uses integer check (max_uses is null or max_uses > 0),
+  used_count integer not null default 0,
+  starts_at timestamptz,
+  expires_at timestamptz,
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (kind <> 'percent' or value <= 100)
+);
+
+-- One order pays for one thing: a course, a seat in a live session, or a
+-- consultation deposit. Item columns for live sessions and bookings are added
+-- further down, once those tables exist.
 create table public.orders (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles (id) on delete restrict,
-  course_id uuid not null references public.courses (id) on delete restrict,
+  kind public.order_kind not null,
+  course_id uuid references public.courses (id) on delete restrict,
+  description text not null default '',
+  subtotal_cents integer not null check (subtotal_cents >= 0),
+  discount_cents integer not null default 0 check (discount_cents >= 0),
   amount_cents integer not null check (amount_cents >= 0),
+  discount_code_id uuid references public.discount_codes (id) on delete set null,
   currency text not null default 'ZAR',
   status public.order_status not null default 'pending',
   provider text not null default 'payfast',
   provider_payment_id text,
   created_at timestamptz not null default now(),
   paid_at timestamptz,
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  check (amount_cents = subtotal_cents - discount_cents)
 );
 create index orders_user_id_idx on public.orders (user_id);
 create index orders_course_id_idx on public.orders (course_id);
+create index orders_discount_code_id_idx on public.orders (discount_code_id);
 
 create table public.enrolments (
   id uuid primary key default gen_random_uuid(),
@@ -274,6 +323,8 @@ create table public.live_sessions (
   starts_at timestamptz not null,
   duration_minutes integer not null default 60 check (duration_minutes > 0),
   platform text not null default 'Zoom',
+  -- 0 = free to register
+  price_cents integer not null default 0 check (price_cents >= 0),
   -- null means unlimited places
   capacity integer check (capacity is null or capacity > 0),
   sort_order integer not null default 0,
@@ -337,6 +388,9 @@ create table public.bookings (
   mode public.booking_mode not null default 'online',
   notes text check (notes is null or char_length(notes) <= 5000),
   consent boolean not null default false,
+  -- Copied from the service when the booking is made (see trigger below).
+  deposit_cents integer not null default 0 check (deposit_cents >= 0),
+  deposit_paid_at timestamptz,
   status public.booking_status not null default 'requested',
   meeting_link text,
   admin_notes text,
@@ -346,6 +400,35 @@ create table public.bookings (
 create index bookings_user_id_idx on public.bookings (user_id);
 create index bookings_service_id_idx on public.bookings (service_id);
 create index bookings_created_at_idx on public.bookings (created_at desc);
+
+alter table public.orders
+  add column live_session_id uuid references public.live_sessions (id) on delete restrict,
+  add column booking_id uuid references public.bookings (id) on delete restrict,
+  add constraint orders_item_matches_kind check (
+    (kind = 'course' and course_id is not null and live_session_id is null and booking_id is null)
+    or (kind = 'live_session' and live_session_id is not null and course_id is null and booking_id is null)
+    or (kind = 'consultation' and booking_id is not null and course_id is null and live_session_id is null)
+  );
+create index orders_live_session_id_idx on public.orders (live_session_id);
+create index orders_booking_id_idx on public.orders (booking_id);
+
+-- The deposit is always taken from the service, never from the visitor's form.
+create or replace function private.set_booking_deposit()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  new.deposit_paid_at := null;
+  new.deposit_cents := coalesce(
+    (select booking_deposit_cents from public.services where id = new.service_id), 0);
+  return new;
+end;
+$$;
+create trigger bookings_set_deposit
+  before insert on public.bookings
+  for each row execute function private.set_booking_deposit();
 
 create table public.investor_leads (
   id uuid primary key default gen_random_uuid(),
@@ -372,7 +455,7 @@ begin
   foreach t in array array[
     'services', 'team_members', 'case_studies', 'testimonials', 'courses',
     'course_modules', 'lessons', 'lesson_contents', 'orders', 'enrolments',
-    'live_sessions', 'live_session_links',
+    'live_sessions', 'live_session_links', 'discount_codes',
     'enquiries', 'bookings', 'investor_leads'
   ]
   loop
@@ -429,6 +512,7 @@ $$;
 grant usage on schema private to anon, authenticated, service_role;
 revoke execute on all functions in schema private from public;
 grant execute on function private.is_admin() to anon, authenticated, service_role;
+grant execute on function private.is_staff() to anon, authenticated, service_role;
 grant execute on function private.is_enrolled(uuid) to anon, authenticated, service_role;
 grant execute on function private.can_read_lesson(uuid) to anon, authenticated, service_role;
 
@@ -445,6 +529,7 @@ alter table public.course_modules enable row level security;
 alter table public.lessons enable row level security;
 alter table public.lesson_contents enable row level security;
 alter table public.orders enable row level security;
+alter table public.discount_codes enable row level security;
 alter table public.enrolments enable row level security;
 alter table public.lesson_progress enable row level security;
 alter table public.certificates enable row level security;
@@ -488,7 +573,7 @@ $$;
 revoke execute on function public.set_user_role(uuid, public.user_role) from public, anon;
 grant execute on function public.set_user_role(uuid, public.user_role) to authenticated;
 
--- Published content is readable by everyone; admins manage everything.
+-- Published content is readable by everyone; staff (admins and editors) manage it.
 do $$
 declare
   t text;
@@ -496,20 +581,20 @@ begin
   foreach t in array array['services', 'team_members', 'case_studies', 'testimonials', 'courses', 'live_sessions']
   loop
     execute format(
-      'create policy %I on public.%I for select to anon, authenticated using (published or (select private.is_admin()))',
+      'create policy %I on public.%I for select to anon, authenticated using (published or (select private.is_staff()))',
       t || ': read published', t
     );
     execute format(
-      'create policy %I on public.%I for insert to authenticated with check ((select private.is_admin()))',
-      t || ': admin insert', t
+      'create policy %I on public.%I for insert to authenticated with check ((select private.is_staff()))',
+      t || ': staff insert', t
     );
     execute format(
-      'create policy %I on public.%I for update to authenticated using ((select private.is_admin())) with check ((select private.is_admin()))',
-      t || ': admin update', t
+      'create policy %I on public.%I for update to authenticated using ((select private.is_staff())) with check ((select private.is_staff()))',
+      t || ': staff update', t
     );
     execute format(
-      'create policy %I on public.%I for delete to authenticated using ((select private.is_admin()))',
-      t || ': admin delete', t
+      'create policy %I on public.%I for delete to authenticated using ((select private.is_staff()))',
+      t || ': staff delete', t
     );
   end loop;
 end;
@@ -519,39 +604,39 @@ $$;
 create policy "course_modules: read published" on public.course_modules
   for select to anon, authenticated
   using (
-    (select private.is_admin())
+    (select private.is_staff())
     or exists (select 1 from public.courses c where c.id = course_id and c.published)
   );
-create policy "course_modules: admin insert" on public.course_modules
-  for insert to authenticated with check ((select private.is_admin()));
-create policy "course_modules: admin update" on public.course_modules
-  for update to authenticated using ((select private.is_admin())) with check ((select private.is_admin()));
-create policy "course_modules: admin delete" on public.course_modules
-  for delete to authenticated using ((select private.is_admin()));
+create policy "course_modules: staff insert" on public.course_modules
+  for insert to authenticated with check ((select private.is_staff()));
+create policy "course_modules: staff update" on public.course_modules
+  for update to authenticated using ((select private.is_staff())) with check ((select private.is_staff()));
+create policy "course_modules: staff delete" on public.course_modules
+  for delete to authenticated using ((select private.is_staff()));
 
 create policy "lessons: read published" on public.lessons
   for select to anon, authenticated
   using (
-    (select private.is_admin())
+    (select private.is_staff())
     or exists (select 1 from public.courses c where c.id = course_id and c.published)
   );
-create policy "lessons: admin insert" on public.lessons
-  for insert to authenticated with check ((select private.is_admin()));
-create policy "lessons: admin update" on public.lessons
-  for update to authenticated using ((select private.is_admin())) with check ((select private.is_admin()));
-create policy "lessons: admin delete" on public.lessons
-  for delete to authenticated using ((select private.is_admin()));
+create policy "lessons: staff insert" on public.lessons
+  for insert to authenticated with check ((select private.is_staff()));
+create policy "lessons: staff update" on public.lessons
+  for update to authenticated using ((select private.is_staff())) with check ((select private.is_staff()));
+create policy "lessons: staff delete" on public.lessons
+  for delete to authenticated using ((select private.is_staff()));
 
 -- Lesson bodies: preview lessons for everyone, the rest for enrolled users.
 create policy "lesson_contents: read if entitled" on public.lesson_contents
   for select to anon, authenticated
-  using ((select private.is_admin()) or private.can_read_lesson(lesson_id));
-create policy "lesson_contents: admin insert" on public.lesson_contents
-  for insert to authenticated with check ((select private.is_admin()));
-create policy "lesson_contents: admin update" on public.lesson_contents
-  for update to authenticated using ((select private.is_admin())) with check ((select private.is_admin()));
-create policy "lesson_contents: admin delete" on public.lesson_contents
-  for delete to authenticated using ((select private.is_admin()));
+  using ((select private.is_staff()) or private.can_read_lesson(lesson_id));
+create policy "lesson_contents: staff insert" on public.lesson_contents
+  for insert to authenticated with check ((select private.is_staff()));
+create policy "lesson_contents: staff update" on public.lesson_contents
+  for update to authenticated using ((select private.is_staff())) with check ((select private.is_staff()));
+create policy "lesson_contents: staff delete" on public.lesson_contents
+  for delete to authenticated using ((select private.is_staff()));
 
 -- Orders and enrolments are written by the server (secret key) only, so a
 -- user can never grant themselves access to a paid course.
@@ -565,6 +650,15 @@ create policy "enrolments: admin update" on public.enrolments
   for update to authenticated using ((select private.is_admin())) with check ((select private.is_admin()));
 
 revoke insert, update, delete on public.orders from anon, authenticated;
+
+create policy "discount_codes: admin read" on public.discount_codes
+  for select to authenticated using ((select private.is_admin()));
+create policy "discount_codes: admin insert" on public.discount_codes
+  for insert to authenticated with check ((select private.is_admin()));
+create policy "discount_codes: admin update" on public.discount_codes
+  for update to authenticated using ((select private.is_admin())) with check ((select private.is_admin()));
+create policy "discount_codes: admin delete" on public.discount_codes
+  for delete to authenticated using ((select private.is_admin()));
 revoke insert, delete on public.enrolments from anon, authenticated;
 
 -- Progress: a learner ticks off lessons in courses they are enrolled in.
@@ -588,18 +682,18 @@ revoke update on public.lesson_progress from anon, authenticated;
 create policy "live_session_links: read if registered" on public.live_session_links
   for select to authenticated
   using (
-    (select private.is_admin())
+    (select private.is_staff())
     or exists (
       select 1 from public.live_registrations r
       where r.session_id = live_session_links.session_id and r.user_id = (select auth.uid())
     )
   );
-create policy "live_session_links: admin insert" on public.live_session_links
-  for insert to authenticated with check ((select private.is_admin()));
-create policy "live_session_links: admin update" on public.live_session_links
-  for update to authenticated using ((select private.is_admin())) with check ((select private.is_admin()));
-create policy "live_session_links: admin delete" on public.live_session_links
-  for delete to authenticated using ((select private.is_admin()));
+create policy "live_session_links: staff insert" on public.live_session_links
+  for insert to authenticated with check ((select private.is_staff()));
+create policy "live_session_links: staff update" on public.live_session_links
+  for update to authenticated using ((select private.is_staff())) with check ((select private.is_staff()));
+create policy "live_session_links: staff delete" on public.live_session_links
+  for delete to authenticated using ((select private.is_staff()));
 
 create policy "live_registrations: read own or admin" on public.live_registrations
   for select to authenticated
@@ -632,6 +726,10 @@ begin
   end if;
   if v_session.starts_at + make_interval(mins => v_session.duration_minutes) < now() then
     raise exception 'SESSION_ENDED';
+  end if;
+  if v_session.price_cents > 0 then
+    -- Paid sessions are joined by paying for an order.
+    raise exception 'SESSION_PAID';
   end if;
   if exists (select 1 from public.live_registrations where user_id = v_user and session_id = p_session_id) then
     return;
@@ -724,7 +822,126 @@ create policy "investor_leads: admin delete" on public.investor_leads
 -- Server-side operations (called with the secret key only)
 -- ---------------------------------------------------------------------------
 
--- Marks an order paid and enrols the buyer, exactly once.
+-- Works out what a discount code takes off. Raises DISCOUNT_INVALID if the
+-- code does not exist, is switched off, expired, used up or not for this item.
+create or replace function public.quote_discount(
+  p_code text, p_kind public.order_kind, p_subtotal_cents integer
+)
+returns table (discount_code_id uuid, discount_cents integer)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v public.discount_codes%rowtype;
+begin
+  select * into v from public.discount_codes
+  where code = upper(regexp_replace(coalesce(p_code, ''), '[^A-Za-z0-9]', '', 'g'));
+  if not found
+    or not v.active
+    or (v.starts_at is not null and v.starts_at > now())
+    or (v.expires_at is not null and v.expires_at < now())
+    or (v.max_uses is not null and v.used_count >= v.max_uses)
+    or (v.applies_to is not null and v.applies_to <> p_kind)
+  then
+    raise exception 'DISCOUNT_INVALID';
+  end if;
+  discount_code_id := v.id;
+  discount_cents := least(
+    p_subtotal_cents,
+    case v.kind
+      when 'percent' then round(p_subtotal_cents * v.value / 100.0)::integer
+      else v.value
+    end
+  );
+  return next;
+end;
+$$;
+revoke execute on function public.quote_discount(text, public.order_kind, integer) from public, anon;
+grant execute on function public.quote_discount(text, public.order_kind, integer) to authenticated, service_role;
+
+-- Creates a pending order. The price always comes from the database, never
+-- from the browser. Raises a named error if the item cannot be bought.
+create or replace function public.create_order(
+  p_user_id uuid, p_kind public.order_kind, p_item_id uuid, p_code text default null
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_subtotal integer;
+  v_description text;
+  v_discount_id uuid;
+  v_discount integer := 0;
+  v_order_id uuid;
+  v_session public.live_sessions%rowtype;
+  v_booking public.bookings%rowtype;
+begin
+  if p_kind = 'course' then
+    select price_cents, title into v_subtotal, v_description
+      from public.courses where id = p_item_id and published;
+    if not found then raise exception 'ITEM_NOT_FOUND'; end if;
+    if exists (
+      select 1 from public.enrolments
+      where user_id = p_user_id and course_id = p_item_id and status in ('active', 'completed')
+    ) then
+      raise exception 'ALREADY_OWNED';
+    end if;
+  elsif p_kind = 'live_session' then
+    select * into v_session from public.live_sessions where id = p_item_id and published;
+    if not found then raise exception 'ITEM_NOT_FOUND'; end if;
+    if v_session.starts_at + make_interval(mins => v_session.duration_minutes) < now() then
+      raise exception 'SESSION_ENDED';
+    end if;
+    if exists (
+      select 1 from public.live_registrations where user_id = p_user_id and session_id = p_item_id
+    ) then
+      raise exception 'ALREADY_OWNED';
+    end if;
+    if v_session.capacity is not null and (
+      select count(*) from public.live_registrations where session_id = p_item_id
+    ) >= v_session.capacity then
+      raise exception 'SESSION_FULL';
+    end if;
+    v_subtotal := v_session.price_cents;
+    v_description := v_session.title;
+  else
+    select * into v_booking from public.bookings where id = p_item_id and user_id = p_user_id;
+    if not found then raise exception 'ITEM_NOT_FOUND'; end if;
+    if v_booking.deposit_cents = 0 or v_booking.deposit_paid_at is not null
+      or v_booking.status = 'cancelled' then
+      raise exception 'NOTHING_TO_PAY';
+    end if;
+    v_subtotal := v_booking.deposit_cents;
+    v_description := 'Consultation deposit, ' || to_char(v_booking.preferred_date, 'FMDD Mon YYYY');
+  end if;
+
+  if coalesce(trim(p_code), '') <> '' then
+    select q.discount_code_id, q.discount_cents into v_discount_id, v_discount
+      from public.quote_discount(p_code, p_kind, v_subtotal) q;
+  end if;
+
+  insert into public.orders (
+    user_id, kind, course_id, live_session_id, booking_id, description,
+    subtotal_cents, discount_cents, amount_cents, discount_code_id
+  ) values (
+    p_user_id, p_kind,
+    case when p_kind = 'course' then p_item_id end,
+    case when p_kind = 'live_session' then p_item_id end,
+    case when p_kind = 'consultation' then p_item_id end,
+    v_description, v_subtotal, v_discount, v_subtotal - v_discount, v_discount_id
+  )
+  returning id into v_order_id;
+  return v_order_id;
+end;
+$$;
+revoke execute on function public.create_order(uuid, public.order_kind, uuid, text) from public, anon, authenticated;
+grant execute on function public.create_order(uuid, public.order_kind, uuid, text) to service_role;
+
+-- Marks an order paid and delivers what was bought, exactly once.
 create or replace function public.complete_order(p_order_id uuid, p_provider_payment_id text)
 returns public.order_status
 language plpgsql
@@ -746,11 +963,26 @@ begin
   set status = 'paid', paid_at = now(), provider_payment_id = p_provider_payment_id
   where id = p_order_id;
 
-  insert into public.enrolments (user_id, course_id, order_id)
-  values (v_order.user_id, v_order.course_id, v_order.id)
-  on conflict (user_id, course_id)
-  do update set status = 'active', order_id = excluded.order_id
-  where public.enrolments.status = 'refunded';
+  if v_order.discount_code_id is not null then
+    update public.discount_codes set used_count = used_count + 1
+    where id = v_order.discount_code_id;
+  end if;
+
+  if v_order.kind = 'course' then
+    insert into public.enrolments (user_id, course_id, order_id)
+    values (v_order.user_id, v_order.course_id, v_order.id)
+    on conflict (user_id, course_id)
+    do update set status = 'active', order_id = excluded.order_id
+    where public.enrolments.status = 'refunded';
+  elsif v_order.kind = 'live_session' then
+    -- They have paid, so they get the seat even if the room filled meanwhile.
+    insert into public.live_registrations (user_id, session_id)
+    values (v_order.user_id, v_order.live_session_id)
+    on conflict do nothing;
+  else
+    update public.bookings set deposit_paid_at = now()
+    where id = v_order.booking_id and deposit_paid_at is null;
+  end if;
 
   return 'paid';
 end;

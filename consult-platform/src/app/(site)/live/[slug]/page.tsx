@@ -1,4 +1,4 @@
-import { CalendarDays, CheckCircle2, Clock, User, Users, Video } from "lucide-react";
+import { CalendarDays, CheckCircle2, Clock, Ticket, User, Users, Video } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -16,7 +16,7 @@ import {
 } from "@/lib/data/content";
 import { isRegisteredForLiveSession } from "@/lib/data/member";
 import { isSupabaseConfigured } from "@/lib/env";
-import { formatDuration, formatSessionTime } from "@/lib/utils";
+import { formatDuration, formatPrice, formatSessionTime } from "@/lib/utils";
 
 export async function generateStaticParams() {
   return slugParams(await getUpcomingLiveSessions());
@@ -32,6 +32,7 @@ const ERRORS: Record<string, string> = {
   full: "Sorry, this session is now fully booked.",
   ended: "This session has already taken place.",
   missing: "This session is no longer available.",
+  paid: "This session needs a ticket. Please book your seat below.",
   failed: "We could not register you. Please try again.",
 };
 
@@ -64,6 +65,9 @@ export default async function LiveSessionPage({ params, searchParams }: PageProp
               )}
               <Detail icon={<Video className="h-5 w-5" aria-hidden />} label="Where">
                 Online, on {session.platform}
+              </Detail>
+              <Detail icon={<Ticket className="h-5 w-5" aria-hidden />} label="Price">
+                {formatPrice(session.price_cents)}
               </Detail>
               {session.places_left != null && (
                 <Detail icon={<Users className="h-5 w-5" aria-hidden />} label="Places">
@@ -131,7 +135,9 @@ async function Registration({
     return (
       <div className="grid gap-3">
         <p className="text-sm text-muted">
-          Registration is free. Sign in or create an account to get the joining link.
+          {session.price_cents === 0
+            ? "Registration is free. Sign in or create an account to get the joining link."
+            : "Sign in or create an account to book your seat."}
         </p>
         <ButtonLink href={`/register?next=${next}`} prefetch={false}>
           Create a free account
@@ -157,12 +163,14 @@ async function Registration({
           <ButtonLink href="/dashboard#live" prefetch={false}>
             Go to my dashboard
           </ButtonLink>
-          <form action={cancelLiveRegistration} className="grid">
-            {hidden}
-            <SubmitButton variant="ghost" pendingText="Cancelling…">
-              Cancel my place
-            </SubmitButton>
-          </form>
+          {session.price_cents === 0 && (
+            <form action={cancelLiveRegistration} className="grid">
+              {hidden}
+              <SubmitButton variant="ghost" pendingText="Cancelling…">
+                Cancel my place
+              </SubmitButton>
+            </form>
+          )}
         </div>
       </div>
     );
@@ -173,6 +181,10 @@ async function Registration({
       {error && <FormMessage state={{ status: "error", message: error }} />}
       {session.places_left === 0 ? (
         <p className="text-sm text-muted">This session is fully booked.</p>
+      ) : session.price_cents > 0 ? (
+        <ButtonLink href={`/checkout/live/${session.slug}`} size="lg" prefetch={false}>
+          Book your seat for {formatPrice(session.price_cents)}
+        </ButtonLink>
       ) : (
         <form action={registerForLiveSession} className="grid">
           {hidden}

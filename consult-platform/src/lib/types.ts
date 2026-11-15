@@ -8,6 +8,7 @@ export type Service = {
   deliverables: string[];
   price_from_cents: number | null;
   duration_label: string | null;
+  booking_deposit_cents: number;
   featured: boolean;
   sort_order: number;
 };
@@ -94,6 +95,7 @@ export type LiveSession = {
   starts_at: string;
   duration_minutes: number;
   platform: string;
+  price_cents: number;
   capacity: number | null;
   sort_order: number;
 };
@@ -102,7 +104,8 @@ export type BookingStatus = "requested" | "confirmed" | "completed" | "cancelled
 export type LeadStatus = "new" | "in_progress" | "closed";
 export type OrderStatus = "pending" | "paid" | "failed" | "cancelled";
 export type EnrolmentStatus = "active" | "completed" | "refunded";
-export type UserRole = "member" | "admin";
+export type UserRole = "member" | "editor" | "admin";
+export type OrderKind = "course" | "live_session" | "consultation";
 
 export type Profile = {
   id: string;

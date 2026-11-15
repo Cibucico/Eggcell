@@ -30,7 +30,7 @@ async function Enrol({ params }: { params: Promise<{ slug: string }> }) {
 
   const access = await getCourseAccess(course.id);
   if (access.enrolled) redirect(`/learn/${slug}`);
-  if (course.price_cents > 0) redirect(`/checkout/${slug}`);
+  if (course.price_cents > 0) redirect(`/checkout/course/${slug}`);
 
   return (
     <div className="rounded-brand border border-line bg-bg p-8 text-center">
