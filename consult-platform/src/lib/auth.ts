@@ -46,3 +46,10 @@ export async function requireAdmin(): Promise<Profile> {
   if (profile.role !== "admin") redirect("/dashboard");
   return profile;
 }
+
+/** Admins and content editors. */
+export async function requireStaff(): Promise<Profile> {
+  const profile = await requireProfile("/admin");
+  if (profile.role !== "admin" && profile.role !== "editor") redirect("/dashboard");
+  return profile;
+}
