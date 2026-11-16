@@ -54,9 +54,24 @@ export async function getServices(): Promise<Service[]> {
   return data as Service[];
 }
 
+/**
+ * Detail pages look their item up by its own web address name rather than
+ * searching the cached list. A page for an item created after the site was
+ * built then gets a fresh lookup instead of the list captured at build time.
+ */
 export async function getService(slug: string): Promise<Service | null> {
-  const services = await getServices();
-  return services.find((s) => s.slug === slug) ?? null;
+  "use cache";
+  cacheLife("hours");
+  cacheTag("services");
+  if (!isSupabaseConfigured) return seedServices.find((s) => s.slug === slug) ?? null;
+  const { data, error } = await createPublicClient()
+    .from("services")
+    .select(SERVICE_COLS)
+    .eq("slug", slug)
+    .eq("published", true)
+    .maybeSingle();
+  if (error) fail("service", error.message);
+  return (data as Service | null) ?? null;
 }
 
 export async function getTeam(): Promise<TeamMember[]> {
@@ -91,8 +106,20 @@ export async function getCaseStudies(): Promise<CaseStudy[]> {
 }
 
 export async function getCaseStudy(slug: string): Promise<CaseStudy | null> {
-  const all = await getCaseStudies();
-  return all.find((c) => c.slug === slug) ?? null;
+  "use cache";
+  cacheLife("hours");
+  cacheTag("case_studies");
+  if (!isSupabaseConfigured) return seedCaseStudies.find((c) => c.slug === slug) ?? null;
+  const { data, error } = await createPublicClient()
+    .from("case_studies")
+    .select(CASE_COLS)
+    .eq("slug", slug)
+    .eq("published", true)
+    .maybeSingle();
+  if (error) fail("case study", error.message);
+  if (!data) return null;
+  const study = data as CaseStudy;
+  return { ...study, metrics: Array.isArray(study.metrics) ? study.metrics : [] };
 }
 
 export async function getTestimonials(): Promise<Testimonial[]> {
@@ -208,8 +235,33 @@ export async function getUpcomingLiveSessions(): Promise<LiveSessionListing[]> {
 }
 
 export async function getLiveSession(slug: string): Promise<LiveSessionListing | null> {
-  const sessions = await getUpcomingLiveSessions();
-  return sessions.find((s) => s.slug === slug) ?? null;
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("live_sessions");
+  if (!isSupabaseConfigured) {
+    const session = seedLiveSessions.find((s) => s.slug === slug);
+    if (!session) return null;
+    const { join_url: _join, ...rest } = session;
+    return { ...rest, places_left: rest.capacity };
+  }
+  const supabase = createPublicClient();
+  const { data, error } = await supabase
+    .from("live_sessions")
+    .select(LIVE_COLS)
+    .eq("slug", slug)
+    .eq("published", true)
+    .maybeSingle();
+  if (error) fail("live session", error.message);
+  if (!data) return null;
+  const session = data as LiveSession;
+  // Sessions that have finished are no longer offered.
+  if (new Date(session.starts_at).getTime() + session.duration_minutes * 60_000 < Date.now()) return null;
+  if (session.capacity == null) return { ...session, places_left: null };
+  const { data: taken } = await supabase.rpc("live_session_places_taken");
+  const count = ((taken ?? []) as { session_id: string; taken: number }[]).find(
+    (row) => row.session_id === session.id,
+  );
+  return { ...session, places_left: Math.max(0, session.capacity - Number(count?.taken ?? 0)) };
 }
 
 export function countLessons(course: CourseWithOutline): number {

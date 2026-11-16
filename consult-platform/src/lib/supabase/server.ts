@@ -2,6 +2,7 @@ import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { supabasePublishableKey, supabaseUrl } from "@/lib/env";
 
 /**
@@ -9,6 +10,9 @@ import { supabasePublishableKey, supabaseUrl } from "@/lib/env";
  * so it can only read and write what that visitor is allowed to.
  */
 export async function createClient() {
+  // Session checks read the clock (token expiry), so they must run for a real
+  // request, never while Next.js pre-renders a page ahead of a click.
+  await connection();
   const cookieStore = await cookies();
   return createServerClient(supabaseUrl, supabasePublishableKey, {
     cookies: {

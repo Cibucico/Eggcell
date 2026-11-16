@@ -10,7 +10,9 @@
     "typecheck": "next typegen && tsc --noEmit",
     "seed:sql": "node scripts/generate-seed.mts",
     "test:db": "bash supabase/tests/run.sh",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "node e2e/run.js",
+    "local:db": "bash supabase/local/start.sh"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

@@ -42,3 +42,6 @@ next-env.d.ts
 
 # keep the example env file in git
 !.env.example
+
+# local Supabase stand-in runtime files
+/.local-supabase/

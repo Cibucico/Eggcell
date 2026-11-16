@@ -22,14 +22,15 @@ Stack: Next.js (App Router), Supabase (Postgres and auth), Tailwind CSS.
 
 | Area | State |
 | --- | --- |
-| Public site, lesson player, forms | Built and browser-tested in preview mode |
-| Database schema and access rules | Tested on local Postgres (`npm run test:db`) |
-| Payment signing, form handling, lesson content | Unit-tested (`npm test`) |
-| Sign-in, dashboard, checkout, admin area | Built, **not yet run against a live Supabase project** |
-| PayFast | Built, **not yet run against PayFast** (needs a merchant or sandbox account and a public URL) |
+| Public site, lesson player, forms | Browser-tested |
+| Database schema and access rules | Tested on Postgres (`npm run test:db`) |
+| Sign-up, email confirmation, password reset, dashboard, enrolment, certificates, live sessions, discount checkout, admin area, staff roles | Tested end to end against a local Supabase stack (`npm run test:e2e`) |
+| PayFast hand-off | The signed payment form is checked; forged notifications are rejected |
+| PayFast notification from a real payment | **Not tested yet.** Needs a PayFast sandbox or merchant account and a public URL |
+| A hosted Supabase project, real email delivery, a live domain | **Not connected yet** |
 
-Until the services below are connected the site says so itself: a banner in
-preview mode, and "online payment is still under construction" at checkout.
+Until payments are connected the site says so itself: checkout shows "online
+payment is still under construction".
 
 ## Run it locally
 
@@ -44,6 +45,45 @@ npm run dev
 With no environment variables the site runs in **preview mode**: it shows the
 sample content from `src/content/seed.ts`, lessons are open, and sign-in,
 forms and payments are switched off.
+
+## Test with a local database (free, no Docker)
+
+This runs your own Postgres with Supabase's open-source sign-in service and
+data API, installed through Nix. Emails are saved to `.local-supabase/mail`
+instead of being sent.
+
+Needs PostgreSQL 15+, [Nix](https://nixos.org/download) and Node.
+
+```bash
+npm run local:db
+```
+
+```bash
+npm run dev
+```
+
+Register on the site, then make yourself an admin with the command the first
+script prints. Useful variations:
+
+| Command | What it does |
+| --- | --- |
+| `npm run local:db -- --reset` | Wipes the local database and starts again |
+| `LOCAL_AUTOCONFIRM=false npm run local:db` | New users must confirm their email (open the link from `.local-supabase/mail`) |
+| `PSQL_SUPER="psql -U postgres" npm run local:db` | Use a different way to run psql as the database superuser |
+
+To run the end-to-end checks (needs Playwright on the machine):
+
+```bash
+LOCAL_AUTOCONFIRM=false npm run local:db -- --reset
+```
+
+```bash
+npm run build && npm start
+```
+
+```bash
+E2E_EMAIL=1 npm run test:e2e
+```
 
 ## Going live: what each client site needs
 
@@ -81,7 +121,7 @@ Three demo brands are included: `meridian`, `umoja` and `apex`.
 - Replace all sample content. Services, team, case studies, testimonials,
   statistics, courses and live sessions are fictional.
 - Have an attorney review `/legal/privacy` and `/legal/terms`.
-- Run through sign-up, enrolment, a sandbox payment and the admin area on the
+- Make one sandbox payment end to end, and repeat sign-up and a booking on the
   live Supabase project.
 
 ## Checks
@@ -92,6 +132,7 @@ Three demo brands are included: `meridian`, `umoja` and `apex`.
 | `npm run typecheck` | Type check |
 | `npm test` | Unit tests |
 | `npm run test:db` | Applies the schema to a local Postgres and tests the access rules |
+| `npm run test:e2e` | Browser checks of the signed-in flows against the local stack |
 | `npm run build` | Production build |
 | `npm run seed:sql` | Regenerates `supabase/seed.sql` from `src/content/seed.ts` |
 
