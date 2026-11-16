@@ -9,9 +9,9 @@ export const meridian: BrandConfig = {
   key: "meridian",
   name: "Meridian Advisory",
   legalName: "Meridian Advisory (Pty) Ltd",
-  tagline: "Strategy, funding and training for growing businesses",
+  tagline: "Strategy, funding and training for women-led businesses",
   description:
-    "Meridian Advisory helps South African businesses plan, fund and run their next stage of growth, through hands-on consulting and practical online training.",
+    "Meridian Advisory helps women-owned and women-led businesses in South Africa plan, fund and run their next stage of growth, through hands-on consulting and practical online training.",
   monogram: "M",
   contact: {
     email: "hello@meridianadvisory.example",
@@ -24,20 +24,21 @@ export const meridian: BrandConfig = {
     linkedin: "https://www.linkedin.com/",
   },
   theme: {
-    primary: "#14324f",
+    primary: "#b0125a",
     primaryForeground: "#ffffff",
-    deep: "#0b1f33",
-    deepForeground: "#f4f1ea",
-    accent: "#c8963e",
-    accentForeground: "#1c1405",
-    background: "#fbfaf7",
-    surface: "#f3f0e9",
-    ink: "#14202b",
-    muted: "#55616d",
-    line: "#ddd8cc",
+    deep: "#3d0a24",
+    deepForeground: "#fff1f6",
+    accent: "#e83e8c",
+    accentForeground: "#2b0616",
+    background: "#fff8fb",
+    surface: "#fdebf2",
+    ink: "#2a1320",
+    muted: "#6b4a5a",
+    line: "#f3cfde",
     radius: "0.375rem",
     headingFont: "serif",
   },
+
   features: {
     training: true,
     investors: true,
@@ -46,13 +47,13 @@ export const meridian: BrandConfig = {
     googleSignIn: false,
   },
   hero: {
-    eyebrow: "Business consulting and training",
-    headline: "Clear advice for the decisions that shape your business",
+    eyebrow: "Consulting and training for women in business",
+    headline: "Clear advice for women building serious businesses",
     subheadline:
-      "We help owners and leadership teams set strategy, raise funding and build operations that scale. Then we teach your people to do it themselves.",
+      "We help women founders and leadership teams set strategy, raise funding and build operations that scale. Then we teach your people to do it themselves.",
   },
   stats: [
-    { value: "15+", label: "Years advising growing businesses" },
+    { value: "15+", label: "Years advising women-led businesses" },
     { value: "120", label: "Engagements delivered" },
     { value: "R240m", label: "Funding raised for clients" },
     { value: "1,800", label: "Managers trained" },
@@ -60,7 +61,7 @@ export const meridian: BrandConfig = {
   about: {
     headline: "Senior advisers who stay until the work is done",
     paragraphs: [
-      "Meridian Advisory was founded on a simple observation: growing businesses rarely lack ideas. They lack time, structure and someone experienced to think alongside.",
+      "Meridian Advisory was founded on a simple observation: women building businesses rarely lack ideas. They lack time, access to capital and someone experienced to think alongside.",
       "We keep the firm deliberately small. Every engagement is led by a partner, and the people you meet at the start are the people who do the work.",
       "Our training programmes come from the same place. They are the frameworks we use with clients, taught in plain language so your team can apply them without us.",
     ],
@@ -80,9 +81,9 @@ export const meridian: BrandConfig = {
     ],
   },
   investors: {
-    headline: "Partner with us to scale advisory and training across Africa",
+    headline: "Partner with us to back women-led businesses across Africa",
     summary:
-      "We are building a platform that makes senior business advice and practical management training affordable for the small and medium businesses that create most of the continent's jobs.",
+      "We are building a platform that makes senior business advice and practical management training affordable for the women-owned businesses that are among the continent's fastest-growing employers.",
     highlights: [
       {
         title: "Proven demand",
