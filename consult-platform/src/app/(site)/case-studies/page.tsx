@@ -25,8 +25,8 @@ export default async function CaseStudiesPage() {
           <EmptyState title="Case studies are on their way" text="Please check back soon." />
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {studies.map((study) => (
-              <CaseStudyCard key={study.id} study={study} />
+            {studies.map((study, i) => (
+              <CaseStudyCard key={study.id} study={study} index={i} />
             ))}
           </div>
         )}

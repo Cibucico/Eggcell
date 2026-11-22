@@ -41,7 +41,7 @@ export const umoja: BrandConfig = {
     ink: "#16231d",
     muted: "#546359",
     line: "#d5dccd",
-    radius: "0.875rem",
+    radius: "1.25rem",
     headingFont: "serif",
   },
 };

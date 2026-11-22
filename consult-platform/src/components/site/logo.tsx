@@ -16,14 +16,14 @@ export function Logo({ inverse = false, className }: { inverse?: boolean; classN
         <span
           aria-hidden
           className={cn(
-            "font-heading flex h-9 w-9 items-center justify-center rounded-brand text-lg font-semibold",
+            "font-heading flex h-9 w-9 items-center justify-center rounded-full text-lg font-semibold italic",
             inverse ? "bg-accent text-accent-fg" : "bg-primary text-primary-fg",
           )}
         >
           {brand.monogram}
         </span>
       )}
-      <span className="font-heading text-lg font-semibold leading-none tracking-tight">
+      <span className="font-heading text-lg font-medium leading-none tracking-tight">
         {brand.name}
       </span>
     </Link>

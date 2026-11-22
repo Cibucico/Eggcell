@@ -40,9 +40,9 @@ function NavList({ items, orientation = "horizontal", onNavigate, pathname }: Pr
               onClick={onNavigate}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "block rounded-brand px-3 py-2 text-sm font-medium transition-colors",
-                orientation === "vertical" && "text-base",
-                active ? "text-primary" : "text-muted hover:text-ink",
+                "block rounded-full px-3.5 py-2 text-sm font-medium transition-colors",
+                orientation === "vertical" && "text-lg",
+                active ? "bg-primary/10 text-primary" : "text-muted hover:bg-surface hover:text-ink",
               )}
             >
               {item.label}

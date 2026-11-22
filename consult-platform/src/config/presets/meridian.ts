@@ -35,7 +35,7 @@ export const meridian: BrandConfig = {
     ink: "#2a1320",
     muted: "#6b4a5a",
     line: "#f3cfde",
-    radius: "0.375rem",
+    radius: "1.25rem",
     headingFont: "serif",
   },
 
@@ -48,7 +48,7 @@ export const meridian: BrandConfig = {
   },
   hero: {
     eyebrow: "Consulting and training for women in business",
-    headline: "Clear advice for women building serious businesses",
+    headline: "Clear advice for _women_ building serious businesses",
     subheadline:
       "We help women founders and leadership teams set strategy, raise funding and build operations that scale. Then we teach your people to do it themselves.",
   },

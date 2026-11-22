@@ -24,14 +24,14 @@ export function MobileNav({ items, showBooking }: { items: NavItem[]; showBookin
         aria-expanded={open}
         aria-controls="mobile-nav"
         aria-label={open ? "Close menu" : "Open menu"}
-        className="flex h-10 w-10 items-center justify-center rounded-brand text-ink hover:bg-surface"
+        className="flex h-11 w-11 items-center justify-center rounded-full bg-surface text-ink hover:bg-line"
       >
         {open ? <X className="h-5 w-5" aria-hidden /> : <Menu className="h-5 w-5" aria-hidden />}
       </button>
       {open && (
         <div
           id="mobile-nav"
-          className="absolute inset-x-0 top-16 border-b border-line bg-bg px-5 pb-6 pt-3 shadow-lg"
+          className="animate-rise absolute inset-x-3 top-full mt-2 rounded-[1.75rem] border border-ink/10 bg-bg p-4 shadow-2xl sm:inset-x-5"
         >
           <nav aria-label="Mobile">
             <NavLinks items={items} orientation="vertical" onNavigate={() => setOpen(false)} />

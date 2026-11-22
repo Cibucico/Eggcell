@@ -1,5 +1,23 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+
+/**
+ * Renders a heading string, setting any _underscored_ words in the accent
+ * italic. Lets copy in the brand config carry emphasis without markup.
+ */
+export function Accent({ text }: { text: string }) {
+  return (
+    <>
+      {text.split(/(_[^_]+_)/).map((part, i) =>
+        part.startsWith("_") && part.endsWith("_") && part.length > 2 ? (
+          <em key={i}>{part.slice(1, -1)}</em>
+        ) : (
+          <Fragment key={i}>{part}</Fragment>
+        ),
+      )}
+    </>
+  );
+}
 
 export function Section({
   children,
@@ -16,14 +34,23 @@ export function Section({
     <section
       id={id}
       className={cn(
-        "py-16 sm:py-24",
+        "relative py-20 sm:py-28",
         tone === "surface" && "bg-surface",
-        tone === "deep" && "bg-deep text-deep-fg",
+        tone === "deep" && "grain overflow-hidden bg-deep text-deep-fg",
         className,
       )}
     >
-      <div className="container-page">{children}</div>
+      <div className="container-page relative">{children}</div>
     </section>
+  );
+}
+
+export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <p className={cn("eyebrow inline-flex items-center gap-2", className)}>
+      <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-accent" />
+      {children}
+    </p>
   );
 }
 
@@ -42,9 +69,11 @@ export function SectionHeading({
 }) {
   return (
     <div className={cn("max-w-2xl", align === "center" && "mx-auto text-center", className)}>
-      {eyebrow && <p className="eyebrow mb-3">{eyebrow}</p>}
-      <h2 className="text-3xl font-semibold sm:text-4xl">{title}</h2>
-      {intro && <p className="mt-4 text-lg leading-relaxed opacity-80">{intro}</p>}
+      {eyebrow && <Eyebrow className="mb-4">{eyebrow}</Eyebrow>}
+      <h2 className="text-4xl font-medium leading-[1.05] tracking-tight sm:text-5xl">
+        <Accent text={title} />
+      </h2>
+      {intro && <p className="mt-5 text-lg leading-relaxed opacity-75">{intro}</p>}
     </div>
   );
 }
@@ -61,31 +90,55 @@ export function PageHeader({
   children?: ReactNode;
 }) {
   return (
-    <header className="relative overflow-hidden bg-deep text-deep-fg">
+    <header className="grain relative -mt-[4.75rem] overflow-hidden bg-deep pt-[4.75rem] text-deep-fg">
       <HeroPattern />
-      <div className="container-page relative py-16 sm:py-20">
-        {eyebrow && <p className="eyebrow mb-4">{eyebrow}</p>}
-        <h1 className="max-w-3xl text-4xl font-semibold sm:text-5xl">{title}</h1>
-        {intro && <p className="mt-5 max-w-2xl text-lg leading-relaxed text-deep-fg/80">{intro}</p>}
-        {children && <div className="mt-8">{children}</div>}
+      <div className="container-page relative pb-16 pt-16 sm:pb-24 sm:pt-24">
+        {eyebrow && <Eyebrow className="animate-rise mb-6">{eyebrow}</Eyebrow>}
+        <h1
+          className="animate-rise max-w-4xl text-5xl font-medium leading-[1.02] tracking-tight sm:text-6xl lg:text-7xl"
+          style={{ animationDelay: "80ms" }}
+        >
+          <Accent text={title} />
+        </h1>
+        {intro && (
+          <p
+            className="animate-rise mt-7 max-w-2xl text-lg leading-relaxed text-deep-fg/75 sm:text-xl"
+            style={{ animationDelay: "160ms" }}
+          >
+            {intro}
+          </p>
+        )}
+        {children && (
+          <div className="animate-rise mt-10" style={{ animationDelay: "240ms" }}>
+            {children}
+          </div>
+        )}
       </div>
     </header>
   );
 }
 
-/** Faint ruled grid used behind dark headers. Purely decorative. */
+/**
+ * Decorative layer for dark sections: two soft colour fields and a set of
+ * concentric arches on the right. Purely visual.
+ */
 export function HeroPattern() {
   return (
-    <div
-      aria-hidden
-      className="pointer-events-none absolute inset-0 opacity-[0.07]"
-      style={{
-        backgroundImage:
-          "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
-        backgroundSize: "72px 72px",
-        maskImage: "linear-gradient(to bottom left, black, transparent 75%)",
-      }}
-    />
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="glow -right-32 -top-40 h-[34rem] w-[34rem] bg-primary opacity-60" />
+      <div className="glow -bottom-56 left-1/4 h-[30rem] w-[30rem] bg-accent opacity-25" />
+      <svg
+        className="absolute -right-24 top-1/2 hidden h-[44rem] w-[44rem] -translate-y-1/2 text-deep-fg/10 md:block"
+        viewBox="0 0 400 400"
+        fill="none"
+      >
+        {[190, 160, 130, 100, 70].map((r) => (
+          <circle key={r} cx="200" cy="200" r={r} stroke="currentColor" strokeWidth="0.75" />
+        ))}
+        <circle cx="200" cy="10" r="4" fill="var(--brand-accent)" />
+        <circle cx="330" cy="200" r="3" fill="var(--brand-accent)" opacity="0.7" />
+      </svg>
+    </div>
   );
 }
 

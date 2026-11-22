@@ -9,8 +9,8 @@ import { NavLinks } from "./nav-links";
 export function SiteHeader() {
   const nav = mainNav();
   return (
-    <header className="no-print sticky top-0 z-40 border-b border-line bg-bg/90 backdrop-blur">
-      <div className="container-page flex h-16 items-center justify-between gap-6">
+    <header className="no-print sticky top-0 z-40 px-3 pt-3 sm:px-5">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-6 rounded-full border border-ink/10 bg-bg/75 pl-4 pr-2 shadow-[0_8px_30px_-18px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:pl-5">
         <Logo />
         <nav aria-label="Main" className="hidden lg:block">
           <NavLinks items={nav} />

@@ -14,8 +14,9 @@ const socialLabels: Record<string, string> = {
 export function SiteFooter() {
   const socials = Object.entries(brand.social).filter(([, url]) => Boolean(url));
   return (
-    <footer className="no-print bg-deep text-deep-fg">
-      <div className="container-page grid gap-10 py-14 md:grid-cols-[1.4fr_1fr_1fr]">
+    <footer className="no-print grain relative overflow-hidden bg-deep text-deep-fg">
+      <div aria-hidden className="glow -left-40 top-0 h-96 w-96 bg-primary opacity-40" />
+      <div className="container-page relative grid gap-10 pt-20 pb-10 md:grid-cols-[1.4fr_1fr_1fr]">
         <div>
           <Logo inverse />
           <p className="mt-4 max-w-sm text-sm leading-relaxed text-deep-fg/70">{brand.description}</p>
@@ -90,7 +91,12 @@ export function SiteFooter() {
           </ul>
         </div>
       </div>
-      <div className="border-t border-deep-fg/10">
+      <div aria-hidden className="container-page relative select-none overflow-hidden">
+        <p className="font-heading whitespace-nowrap text-[18vw] font-medium italic leading-[0.8] tracking-tighter text-deep-fg/[0.06] lg:text-[13rem]">
+          {brand.name.split(" ")[0]}
+        </p>
+      </div>
+      <div className="relative border-t border-deep-fg/10">
         <div className="container-page flex flex-col gap-3 py-6 text-xs text-deep-fg/60 sm:flex-row sm:items-center sm:justify-between">
           <p>
             © <CurrentYear /> {brand.legalName}

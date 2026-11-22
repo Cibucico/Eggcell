@@ -4,7 +4,12 @@ import { brand, siteUrl, themeVars } from "@/config/brand";
 import "./globals.css";
 
 const sans = Geist({ variable: "--font-sans", subsets: ["latin"] });
-const serif = Fraunces({ variable: "--font-serif", subsets: ["latin"] });
+const serif = Fraunces({
+  variable: "--font-serif",
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  axes: ["SOFT", "opsz"],
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

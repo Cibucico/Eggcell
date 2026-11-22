@@ -60,6 +60,7 @@ export type BrandConfig = {
   };
   hero: {
     eyebrow: string;
+    /** Wrap words in _underscores_ to set them in the accent italic. */
     headline: string;
     subheadline: string;
   };
