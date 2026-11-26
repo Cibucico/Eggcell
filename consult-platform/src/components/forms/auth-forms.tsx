@@ -13,7 +13,7 @@ import {
   updateProfile,
 } from "@/lib/actions/auth";
 import { idleState, type Profile } from "@/lib/types";
-import { ConsentField, FormMessage, SubmitButton, TextField } from "./fields";
+import { ConsentField, FormMessage, SelectField, SubmitButton, TextField } from "./fields";
 
 function useNext(): string {
   return useSearchParams().get("next") ?? "";
@@ -81,7 +81,7 @@ export function RegisterForm() {
         hint="At least 10 characters."
         error={e.password}
       />
-      {brand.features.womenOnly && <IdNumberField error={e.id_number} />}
+      {brand.features.womenOnly && <WomanCheckField errors={e} />}
       <ConsentField
         error={e.consent}
         purpose={
@@ -187,6 +187,27 @@ export function ProfileForm({ profile }: { profile: Profile }) {
   );
 }
 
+/** The women-only question: a gender list, or an SA ID number when the brand checks IDs. */
+function WomanCheckField({ errors }: { errors: Record<string, string> }) {
+  if (brand.womenVerification === "sa-id") return <IdNumberField error={errors.id_number} />;
+  return (
+    <SelectField
+      label="Gender"
+      name="gender"
+      defaultValue=""
+      hint="Membership is for women. An admin approves each new member."
+      error={errors.gender}
+    >
+      <option value="" disabled>
+        Choose one
+      </option>
+      <option value="woman">Woman</option>
+      <option value="man">Man</option>
+      <option value="other">Other</option>
+    </SelectField>
+  );
+}
+
 function IdNumberField({ error }: { error?: string }) {
   return (
     <TextField
@@ -207,9 +228,9 @@ export function VerifyIdForm() {
   const e = state.fieldErrors ?? {};
   return (
     <form action={action} className="space-y-4">
-      <IdNumberField error={e.id_number} />
+      <WomanCheckField errors={e} />
       <FormMessage state={state} />
-      <SubmitButton pendingText="Checking…">Submit for approval</SubmitButton>
+      <SubmitButton pendingText="Sending…">Ask for approval</SubmitButton>
     </form>
   );
 }

@@ -18,6 +18,17 @@ re-branded and deployed once per client.
 
 Stack: Next.js (App Router), Supabase (Postgres and auth), Tailwind CSS.
 
+## Brands
+
+Two brands ship with the platform, chosen with `NEXT_PUBLIC_BRAND`:
+
+- `inkqubo` (default): iNkqubo Consultancy, a platform for women in business.
+  About, a Toolkit of guides (Operations, Marketing, Finance), a meeting room
+  for webinars and consultations, chat answered by the team, women-only
+  membership with admin approval, consultation booking and an investors page.
+- `meridian`: a demo consultancy with services, paid courses, live sessions
+  and PayFast checkout.
+
 ## Status
 
 | Area | State |
@@ -132,7 +143,8 @@ Three demo brands are included: `meridian`, `umoja` and `apex`.
 | `npm run typecheck` | Type check |
 | `npm test` | Unit tests |
 | `npm run test:db` | Applies the schema to a local Postgres and tests the access rules |
-| `npm run test:e2e` | Browser checks of the signed-in flows against the local stack |
+| `npm run test:e2e` | Browser checks of the Meridian demo against the local stack |
+| `npm run test:e2e:inkqubo` | Browser checks of the iNkqubo site: chat, sign-up, approval, meeting room, toolkit |
 | `npm run build` | Production build |
 | `npm run seed:sql` | Regenerates `supabase/seed.sql` from `src/content/seed.ts` |
 

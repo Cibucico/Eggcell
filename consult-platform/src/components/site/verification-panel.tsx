@@ -24,7 +24,7 @@ export function VerificationPanel({ profile, submitted }: { profile: Profile; su
         <Clock className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
         <div>
           <p className="font-semibold">
-            {submitted ? "Thank you. Your ID number has been checked." : "Your membership is being reviewed."}
+            {submitted ? "Thank you. Your request has been sent." : "Your membership is being reviewed."}
           </p>
           <p className="mt-1 text-sm text-muted">
             We will email you once it is approved, usually within one business day. In the meantime the
@@ -44,8 +44,10 @@ export function VerificationPanel({ profile, submitted }: { profile: Profile; su
           </p>
           <p className="mt-1 text-sm text-muted">
             {status === "rejected"
-              ? "If you think this is a mistake, contact us, or submit your ID number again below."
-              : "Membership is for women. Enter your South African ID number so we can check it, then an admin will approve your account."}
+              ? "If you think this is a mistake, contact us, or ask again below."
+              : brand.womenVerification === "sa-id"
+                ? "Membership is for women. Enter your South African ID number so we can check it, then an admin will approve your account."
+                : "Membership is for women. Confirm your gender below, then an admin will approve your account."}
           </p>
           <div className="mt-5 max-w-md">
             <VerifyIdForm />

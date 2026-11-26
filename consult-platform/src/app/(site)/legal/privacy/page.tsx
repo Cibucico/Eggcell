@@ -38,6 +38,18 @@ export default function PrivacyPage() {
           <strong>Accounts and training:</strong> your name, email address, the courses you enrol
           in, your lesson progress and any certificates issued to you.
         </li>
+        {brand.features.womenOnly && (
+          <li>
+            <strong>Membership check:</strong>{" "}
+            {brand.womenVerification === "sa-id"
+              ? "membership is for women, so we check that the South African ID number you enter is valid and registered as female. We do not store the ID number itself, only a code made from it that stops the same number being used twice."
+              : "membership is for women, so we ask for your gender when you sign up and an administrator approves each new member."}
+          </li>
+        )}
+        <li>
+          <strong>Chat:</strong> if you use the chat on our website, your name, email address and the
+          messages you send, so that we can reply.
+        </li>
         <li>
           <strong>Payments:</strong> a record of what you bought and the amount. Card and bank
           details are entered on our payment provider’s secure page and are never seen or stored

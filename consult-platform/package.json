@@ -12,7 +12,8 @@
     "test:db": "bash supabase/tests/run.sh",
     "test": "vitest run",
     "test:e2e": "node e2e/run.js",
-    "local:db": "bash supabase/local/start.sh"
+    "local:db": "bash supabase/local/start.sh",
+    "test:e2e:inkqubo": "node e2e/inkqubo.js"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

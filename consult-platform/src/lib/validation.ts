@@ -72,6 +72,10 @@ export const idNumberSchema = z.object({
   id_number: z.string().trim().min(1, "Enter your South African ID number").max(20),
 });
 
+export const genderSchema = z.object({
+  gender: z.enum(["woman", "man", "other"], "Choose an option"),
+});
+
 export const loginSchema = z.object({
   email,
   password: z.string().min(1, "Enter your password"),

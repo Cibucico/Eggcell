@@ -12,6 +12,7 @@ import type { ActionState } from "@/lib/types";
 import { safeNextPath } from "@/lib/utils";
 import {
   formObject,
+  genderSchema,
   idNumberSchema,
   loginSchema,
   profileSchema,
@@ -42,9 +43,34 @@ export async function signIn(_prev: ActionState, formData: FormData): Promise<Ac
   redirect(safeNextPath(String(formData.get("next") ?? "")));
 }
 
+const WOMEN_ONLY_MESSAGE =
+  "Membership is for women. If you chose this by mistake, change your answer, or contact us for help.";
+
 /**
- * On women-only sites: checks the ID number and that it is not already in
- * use. Returns the keyed hash to store, or a field error.
+ * On women-only sites: checks the gender declaration, or the SA ID number
+ * when the brand uses ID checks. Returns what to record, or a field error.
+ */
+async function checkWomanForSignUp(
+  formData: FormData,
+): Promise<{ hash: string | null; note: string } | { error: ActionState }> {
+  if (brand.womenVerification === "sa-id") {
+    const checked = await checkIdForSignUp(formData);
+    if ("error" in checked) return checked;
+    return { hash: checked.hash, note: "Valid female SA ID number checked" };
+  }
+  const parsed = genderSchema.safeParse(formObject(formData));
+  if (!parsed.success) return { error: validationError(parsed.error) };
+  if (parsed.data.gender !== "woman") {
+    return {
+      error: { status: "error", message: "Please check the highlighted fields.", fieldErrors: { gender: WOMEN_ONLY_MESSAGE } },
+    };
+  }
+  return { hash: null, note: "Chose 'Woman' at sign-up" };
+}
+
+/**
+ * Checks the ID number and that it is not already in use. Returns the keyed
+ * hash to store, or a field error.
  */
 async function checkIdForSignUp(
   formData: FormData,
@@ -73,18 +99,22 @@ async function checkIdForSignUp(
   return { hash };
 }
 
-/** Records a checked ID against an account and puts it in the approval queue. */
-async function markPending(userId: string, hash: string, name: string, email: string) {
+/** Records the check against an account and puts it in the approval queue. */
+async function markPending(userId: string, check: { hash: string | null; note: string }, name: string, email: string) {
   const { error } = await createAdminClient()
     .from("profiles")
-    .update({ id_number_hash: hash, verification_status: "pending" })
+    .update({
+      ...(check.hash ? { id_number_hash: check.hash } : {}),
+      verification_status: "pending",
+      verification_note: check.note,
+    })
     .eq("id", userId);
   if (error) {
     console.error("[verification] could not record ID check", error.code);
     return false;
   }
   await notifyTeam(`New member waiting for approval: ${name}`, [
-    `${name} (${email}) has signed up and her ID number has been checked.`,
+    `${name} (${email}) has signed up (${check.note}).`,
     "Approve or decline her membership under Admin, Members.",
   ]);
   return true;
@@ -95,11 +125,11 @@ export async function signUp(_prev: ActionState, formData: FormData): Promise<Ac
   if (!parsed.success) return validationError(parsed.error);
   if (!isSupabaseConfigured) return preview;
 
-  let idHash: string | null = null;
+  let womanCheck: { hash: string | null; note: string } | null = null;
   if (brand.features.womenOnly) {
-    const checked = await checkIdForSignUp(formData);
+    const checked = await checkWomanForSignUp(formData);
     if ("error" in checked) return checked.error;
-    idHash = checked.hash;
+    womanCheck = checked;
   }
 
   const next = safeNextPath(String(formData.get("next") ?? ""));
@@ -129,8 +159,8 @@ export async function signUp(_prev: ActionState, formData: FormData): Promise<Ac
 
   // Supabase returns a user with no identities when the email is already
   // registered; there is then nothing to record against.
-  if (idHash && data.user && (data.user.identities?.length ?? 0) > 0) {
-    await markPending(data.user.id, idHash, parsed.data.full_name, parsed.data.email);
+  if (womanCheck && data.user && (data.user.identities?.length ?? 0) > 0) {
+    await markPending(data.user.id, womanCheck, parsed.data.full_name, parsed.data.email);
   }
 
   // With email confirmation switched off, Supabase signs the user in at once.
@@ -143,7 +173,7 @@ export async function signUp(_prev: ActionState, formData: FormData): Promise<Ac
   };
 }
 
-/** For signed-in members whose account has no ID check yet (or was declined and resubmits). */
+/** For signed-in members whose account has no check yet (or was declined and asks again). */
 export async function submitIdForVerification(
   _prev: ActionState,
   formData: FormData,
@@ -163,9 +193,9 @@ export async function submitIdForVerification(
     redirect("/dashboard");
   }
 
-  const checked = await checkIdForSignUp(formData);
+  const checked = await checkWomanForSignUp(formData);
   if ("error" in checked) return checked.error;
-  const ok = await markPending(userId, checked.hash, profile.full_name || profile.email, profile.email);
+  const ok = await markPending(userId, checked, profile.full_name || profile.email, profile.email);
   if (!ok) return { status: "error", message: ID_MESSAGES.unavailable };
   redirect("/dashboard?verification=submitted");
 }

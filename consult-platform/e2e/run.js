@@ -95,6 +95,8 @@ async function signIn(page, user) {
 
   // ---- Member: lead forms --------------------------------------------------
   await m.goto(`${BASE}/contact?service=funding-readiness`);
+  // The topic is pre-selected from the link once the page has loaded.
+  await m.waitForFunction(() => document.querySelector("[name=service_id]")?.value !== "");
   await m.fill("[name=name]", member.name);
   await m.fill("[name=email]", member.email);
   await m.fill("[name=message]", "We would like help preparing for a funding round.");

@@ -19,6 +19,15 @@ export const metadata: Metadata = {
   },
   description: brand.description,
   applicationName: brand.name,
+  ...(brand.icons
+    ? {
+        icons: {
+          icon: [{ url: brand.icons.s48, sizes: "48x48", type: "image/png" }, { url: brand.icons.s192, sizes: "192x192", type: "image/png" }],
+          apple: [{ url: brand.icons.s180, sizes: "180x180" }],
+        },
+      }
+    : {}),
+  appleWebApp: { capable: true, title: brand.name.split(" ")[0], statusBarStyle: "default" },
   openGraph: {
     type: "website",
     siteName: brand.name,

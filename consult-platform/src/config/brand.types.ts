@@ -77,9 +77,15 @@ export type BrandConfig = {
     meetingRoom: boolean;
     /** Chat answered by a person from the admin area. */
     liveChat: boolean;
-    /** Sign-up requires a female South African ID number and admin approval. */
+    /** Sign-up is for women, with admin approval before members-only features. */
     womenOnly: boolean;
   };
+  /**
+   * How women-only sign-up checks gender before admin approval:
+   * "declaration": she chooses her gender from a list (default).
+   * "sa-id": she enters her South African ID number, which is checked.
+   */
+  womenVerification?: "declaration" | "sa-id";
   /**
    * "bar": logo left, links across the top, menu button on phones.
    * "centered": menu button left, logo centred, one call to action right.

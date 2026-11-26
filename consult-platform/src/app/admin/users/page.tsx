@@ -12,7 +12,7 @@ const statusBadge: Record<VerificationStatus, { label: string; tone: "accent" | 
   pending: { label: "Waiting for approval", tone: "accent" },
   approved: { label: "Approved", tone: "success" },
   rejected: { label: "Declined", tone: "danger" },
-  unverified: { label: "ID not checked", tone: "neutral" },
+  unverified: { label: "Not checked yet", tone: "neutral" },
 };
 
 const order: Record<VerificationStatus, number> = { pending: 0, unverified: 1, approved: 2, rejected: 3 };
@@ -24,7 +24,7 @@ export default async function UsersPage({ searchParams }: PageProps<"/admin/user
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, full_name, email, company, role, created_at, verification_status, id_number_hash")
+    .select("id, full_name, email, company, role, created_at, verification_status, id_number_hash, verification_note")
     .order("created_at", { ascending: false })
     .limit(500);
   if (error) throw new Error(`Could not load users: ${error.message}`);
@@ -79,8 +79,8 @@ export default async function UsersPage({ searchParams }: PageProps<"/admin/user
                       ) : (
                         <div className="space-y-2">
                           <Badge tone={statusBadge[status].tone}>{statusBadge[status].label}</Badge>
-                          {row.id_number_hash && (
-                            <span className="block text-xs text-muted">Valid female SA ID checked</span>
+                          {row.verification_note && (
+                            <span className="block text-xs text-muted">{row.verification_note}</span>
                           )}
                           {status !== "approved" && (
                             <form action={decideMembership} className="flex flex-wrap gap-2">

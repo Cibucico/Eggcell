@@ -64,6 +64,9 @@ export const inkqubo: BrandConfig = {
     womenOnly: true,
   },
   headerLayout: "centered",
+  // For now members choose their gender at sign-up; switch to "sa-id" to
+  // require a South African ID number instead.
+  womenVerification: "declaration",
   navOrder: ["/about", "/toolkit", "/meeting-room", "/investors", "/contact"],
   toolkit: {
     label: "Toolkit",
