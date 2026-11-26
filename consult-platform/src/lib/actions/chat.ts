@@ -55,7 +55,9 @@ async function messagesFor(conversationId: string): Promise<ChatMessage[]> {
 
 /** The visitor's chat: her messages and replies, or a blank form to start one. */
 export async function getChatState(): Promise<ChatState> {
-  if (!brand.features.liveChat || !isSupabaseConfigured) return { status: "off" };
+  if (!brand.features.liveChat) return { status: "off" };
+  // Prototype without a database: show the form so the chat can be seen.
+  if (!isSupabaseConfigured) return { status: "new", prefill: { name: "", email: "" } };
   try {
     const conversation = await currentConversation();
     if (conversation) {
@@ -78,6 +80,9 @@ const startSchema = z.object({
 
 export async function startChat(formData: FormData): Promise<ChatResult> {
   const state = await getChatState();
+  if (!isSupabaseConfigured) {
+    return { state, error: "This is a prototype, so chat messages are not sent yet." };
+  }
   if (state.status === "off") return { state, error: "Chat is not available right now. Please use the contact form." };
   // Bots fill the hidden field; tell them it worked and save nothing.
   if (String(formData.get("website") ?? "") !== "") return { state };

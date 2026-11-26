@@ -16,4 +16,4 @@ export const supabasePublishableKey =
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabasePublishableKey);
 
 export const PREVIEW_MESSAGE =
-  "This site is running in preview mode without a database, so nothing was saved. Connect Supabase to switch this on.";
+  "This is a prototype, so nothing was sent or saved yet. This will work once the site goes live.";

@@ -5,8 +5,8 @@ export function PreviewBanner() {
   if (isSupabaseConfigured) return null;
   return (
     <div className="no-print bg-accent px-4 py-1.5 text-center text-xs font-medium text-accent-fg">
-      Preview mode: showing sample content. Sign-in, forms and payments are switched off until a
-      database is connected.
+      Prototype: sample content for review. Sign-in, chat, forms and the meeting room are not
+      switched on yet.
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist } from "next/font/google";
 import { brand, siteUrl, themeVars } from "@/config/brand";
+import { isSupabaseConfigured } from "@/lib/env";
 import "./globals.css";
 
 const sans = Geist({ variable: "--font-sans", subsets: ["latin"] });
@@ -27,6 +28,7 @@ export const metadata: Metadata = {
         },
       }
     : {}),
+  ...(isSupabaseConfigured ? {} : { robots: { index: false, follow: false } }),
   appleWebApp: { capable: true, title: brand.name.split(" ")[0], statusBarStyle: "default" },
   openGraph: {
     type: "website",
