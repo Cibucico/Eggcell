@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { brand } from "@/config/brand";
 import { AdminNav, type AdminNavGroup } from "@/components/admin/nav";
 import { Logo } from "@/components/site/logo";
-import { resources } from "@/lib/admin/resources";
+import { activeResources as resources } from "@/lib/admin/resources";
 import { signOut } from "@/lib/actions/auth";
 import { requireStaff } from "@/lib/auth";
 
@@ -34,6 +35,7 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
               { href: "/admin/enquiries", label: "Enquiries" },
               { href: "/admin/bookings", label: "Consultations" },
               { href: "/admin/investors", label: "Investor interest" },
+              ...(brand.features.liveChat ? [{ href: "/admin/chat", label: "Chat" }] : []),
             ],
           },
         ]
@@ -46,7 +48,7 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
             items: [
               { href: "/admin/orders", label: "Payments" },
               { href: "/admin/content/discounts", label: "Discount codes" },
-              { href: "/admin/users", label: "Users" },
+              { href: "/admin/users", label: brand.features.womenOnly ? "Members" : "Users" },
             ],
           },
         ]

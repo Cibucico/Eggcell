@@ -40,6 +40,11 @@ export const meridian: BrandConfig = {
   },
 
   features: {
+    services: true,
+    toolkit: false,
+    meetingRoom: false,
+    liveChat: false,
+    womenOnly: false,
     training: true,
     investors: true,
     booking: true,

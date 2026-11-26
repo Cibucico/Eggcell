@@ -11,4 +11,4 @@ psql -q -v ON_ERROR_STOP=1 -d "$DB" -c 'create extension if not exists pgcrypto'
 psql -q -v ON_ERROR_STOP=1 -d "$DB" -c 'drop extension pgcrypto'
 for f in migrations/*.sql; do psql -q -v ON_ERROR_STOP=1 -d "$DB" -f "$f"; done
 psql -q -v ON_ERROR_STOP=1 -d "$DB" -f seed.sql
-psql -v ON_ERROR_STOP=1 -d "$DB" -f tests/01_access_rules.sql
+for t in tests/0[1-9]_*.sql; do psql -v ON_ERROR_STOP=1 -d "$DB" -f "$t"; done

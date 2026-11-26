@@ -10,6 +10,7 @@
  * with the client's real services, people and results before going live.
  */
 import type { Block } from "@/lib/blocks";
+import type { ToolkitArticleSummary } from "@/lib/types";
 import type {
   CaseStudy,
   CourseWithOutline,
@@ -656,3 +657,6 @@ export const seedLiveSessions: (LiveSession & { join_url: string })[] = [
     join_url: "",
   },
 ];
+
+/** The Meridian demo has no toolkit library. */
+export const seedToolkit: (ToolkitArticleSummary & { blocks: Block[] })[] = [];

@@ -2,13 +2,17 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { siteUrl } from "@/config/brand";
+import { brand, siteUrl } from "@/config/brand";
+import { notifyTeam } from "@/lib/email";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { hashIdNumber, ID_MESSAGES, idNumberError } from "@/lib/verification";
 import { isSupabaseConfigured, PREVIEW_MESSAGE } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionState } from "@/lib/types";
 import { safeNextPath } from "@/lib/utils";
 import {
   formObject,
+  idNumberSchema,
   loginSchema,
   profileSchema,
   registerSchema,
@@ -38,10 +42,65 @@ export async function signIn(_prev: ActionState, formData: FormData): Promise<Ac
   redirect(safeNextPath(String(formData.get("next") ?? "")));
 }
 
+/**
+ * On women-only sites: checks the ID number and that it is not already in
+ * use. Returns the keyed hash to store, or a field error.
+ */
+async function checkIdForSignUp(
+  formData: FormData,
+): Promise<{ hash: string } | { error: ActionState }> {
+  const parsed = idNumberSchema.safeParse(formObject(formData));
+  if (!parsed.success) return { error: validationError(parsed.error) };
+  const fieldError = (message: string): { error: ActionState } => ({
+    error: { status: "error", message: "Please check the highlighted fields.", fieldErrors: { id_number: message } },
+  });
+  const problem = idNumberError(parsed.data.id_number);
+  if (problem) return fieldError(problem);
+  let hash: string;
+  try {
+    hash = hashIdNumber(parsed.data.id_number);
+  } catch (err) {
+    console.error("[verification]", (err as Error).message);
+    return { error: { status: "error", message: ID_MESSAGES.unavailable } };
+  }
+  const { data: existing, error } = await createAdminClient()
+    .from("profiles")
+    .select("id")
+    .eq("id_number_hash", hash)
+    .maybeSingle();
+  if (error) return { error: { status: "error", message: ID_MESSAGES.unavailable } };
+  if (existing) return fieldError(ID_MESSAGES.taken);
+  return { hash };
+}
+
+/** Records a checked ID against an account and puts it in the approval queue. */
+async function markPending(userId: string, hash: string, name: string, email: string) {
+  const { error } = await createAdminClient()
+    .from("profiles")
+    .update({ id_number_hash: hash, verification_status: "pending" })
+    .eq("id", userId);
+  if (error) {
+    console.error("[verification] could not record ID check", error.code);
+    return false;
+  }
+  await notifyTeam(`New member waiting for approval: ${name}`, [
+    `${name} (${email}) has signed up and her ID number has been checked.`,
+    "Approve or decline her membership under Admin, Members.",
+  ]);
+  return true;
+}
+
 export async function signUp(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const parsed = registerSchema.safeParse(formObject(formData));
   if (!parsed.success) return validationError(parsed.error);
   if (!isSupabaseConfigured) return preview;
+
+  let idHash: string | null = null;
+  if (brand.features.womenOnly) {
+    const checked = await checkIdForSignUp(formData);
+    if ("error" in checked) return checked.error;
+    idHash = checked.hash;
+  }
 
   const next = safeNextPath(String(formData.get("next") ?? ""));
   const supabase = await createClient();
@@ -67,13 +126,48 @@ export async function signUp(_prev: ActionState, formData: FormData): Promise<Ac
     console.error("[auth] sign-up failed", error.code, error.message);
     return { status: "error", message: "We could not create your account. Please try again." };
   }
+
+  // Supabase returns a user with no identities when the email is already
+  // registered; there is then nothing to record against.
+  if (idHash && data.user && (data.user.identities?.length ?? 0) > 0) {
+    await markPending(data.user.id, idHash, parsed.data.full_name, parsed.data.email);
+  }
+
   // With email confirmation switched off, Supabase signs the user in at once.
   if (data.session) redirect(next);
   return {
     status: "success",
-    message:
-      "Almost done. We have sent a confirmation link to your email address. Open it to activate your account.",
+    message: brand.features.womenOnly
+      ? "Almost done. We have sent a confirmation link to your email address. Open it to activate your account; we will then review your membership."
+      : "Almost done. We have sent a confirmation link to your email address. Open it to activate your account.",
   };
+}
+
+/** For signed-in members whose account has no ID check yet (or was declined and resubmits). */
+export async function submitIdForVerification(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  if (!brand.features.womenOnly || !isSupabaseConfigured) return preview;
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+  if (!userId) redirect("/login?next=/dashboard");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name, email, verification_status")
+    .eq("id", userId)
+    .maybeSingle();
+  if (!profile || profile.verification_status === "approved" || profile.verification_status === "pending") {
+    redirect("/dashboard");
+  }
+
+  const checked = await checkIdForSignUp(formData);
+  if ("error" in checked) return checked.error;
+  const ok = await markPending(userId, checked.hash, profile.full_name || profile.email, profile.email);
+  if (!ok) return { status: "error", message: ID_MESSAGES.unavailable };
+  redirect("/dashboard?verification=submitted");
 }
 
 export async function signOut() {

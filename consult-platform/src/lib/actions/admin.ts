@@ -7,7 +7,7 @@ import { parseResourceForm } from "@/lib/admin/form";
 import { getResource } from "@/lib/admin/resources";
 import { requireAdmin, requireStaff } from "@/lib/auth";
 import { blocksSchema } from "@/lib/blocks";
-import { brand } from "@/config/brand";
+import { brand, siteUrl } from "@/config/brand";
 import { sendEmail } from "@/lib/email";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionState } from "@/lib/types";
@@ -304,6 +304,10 @@ export async function updateBooking(formData: FormData) {
     .safeParse(Object.fromEntries(formData));
   if (!parsed.success) redirect("/admin/bookings?error=1");
   const { id, ...values } = parsed.data;
+  // Hold the consultation in the site's own meeting room.
+  if (brand.features.meetingRoom && formData.get("use_room") === "on") {
+    values.meeting_link = `${siteUrl}/meeting-room/consultation/${id}`;
+  }
 
   const supabase = await createClient();
   const { data: before } = await supabase
@@ -348,4 +352,51 @@ export async function setUserRole(formData: FormData) {
     p_role: parsed.data.role,
   });
   redirect(error ? "/admin/users?error=self" : "/admin/users?saved=1");
+}
+
+// ---------------------------------------------------------------------------
+// Membership approval (women-only sites)
+// ---------------------------------------------------------------------------
+
+export async function decideMembership(formData: FormData) {
+  await requireAdmin();
+  const parsed = z
+    .object({
+      user_id: uuid,
+      decision: z.enum(["approved", "rejected"]),
+      note: z.string().trim().max(500).optional(),
+    })
+    .safeParse(Object.fromEntries(formData));
+  if (!parsed.success) redirect("/admin/users?error=1");
+
+  const supabase = await createClient();
+  const { data: member } = await supabase
+    .from("profiles")
+    .select("email, full_name")
+    .eq("id", parsed.data.user_id)
+    .maybeSingle();
+  const { error } = await supabase.rpc("set_verification", {
+    p_user_id: parsed.data.user_id,
+    p_status: parsed.data.decision,
+    p_note: parsed.data.note ?? null,
+  });
+  if (error || !member) redirect("/admin/users?error=1");
+
+  if (parsed.data.decision === "approved") {
+    await sendEmail({
+      to: member.email,
+      subject: `Welcome to ${brand.name}`,
+      text: [
+        `Hello ${member.full_name || "there"},`,
+        "",
+        `Your ${brand.name} membership has been approved. You can now join webinars and meetings in our meeting room.`,
+        "",
+        "Sign in to see what is coming up.",
+        "",
+        brand.name,
+      ].join("\n"),
+      replyTo: brand.contact.email,
+    });
+  }
+  redirect("/admin/users?saved=1");
 }

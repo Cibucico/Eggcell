@@ -15,6 +15,9 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 
 DB="${LOCAL_DB:-consult_local}"
+BRAND="${NEXT_PUBLIC_BRAND:-inkqubo}"
+SEED_FILE="supabase/seed.$BRAND.sql"
+[[ -f "$SEED_FILE" ]] || SEED_FILE="supabase/seed.sql"
 RUN_DIR="${LOCAL_RUN_DIR:-.local-supabase}"
 SITE_URL="${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}"
 # psql is run as the postgres superuser. Override if yours differs.
@@ -36,6 +39,7 @@ fi
 $PSQL_SUPER -q -v ON_ERROR_STOP=1 -d "$DB" -f supabase/local/setup.sql
 
 # A signing secret shared by the services, and the two API keys made from it.
+[[ -f "$RUN_DIR/id-hash-secret" ]] || node -e "console.log(require('crypto').randomBytes(32).toString('hex'))" > "$RUN_DIR/id-hash-secret"
 [[ -f "$RUN_DIR/jwt-secret" ]] || node -e "console.log(require('crypto').randomBytes(32).toString('hex'))" > "$RUN_DIR/jwt-secret"
 JWT_SECRET="$(cat "$RUN_DIR/jwt-secret")"
 make_key() {
@@ -97,7 +101,7 @@ curl -sf http://127.0.0.1:9999/health > /dev/null || { echo "Sign-in service fai
 if [[ "${FRESH:-}" == "1" ]]; then
   echo "Applying the schema and sample content"
   for f in supabase/migrations/*.sql; do $PSQL_SUPER -q -v ON_ERROR_STOP=1 -d "$DB" -f "$f"; done
-  $PSQL_SUPER -q -v ON_ERROR_STOP=1 -d "$DB" -f supabase/seed.sql
+  $PSQL_SUPER -q -v ON_ERROR_STOP=1 -d "$DB" -f "$SEED_FILE"
 fi
 
 echo "Starting the data API"
@@ -116,14 +120,16 @@ sleep 1
 
 cat > .env.local <<ENV
 # Written by supabase/local/start.sh. Local test stack only.
+NEXT_PUBLIC_BRAND=$BRAND
 NEXT_PUBLIC_SITE_URL=$SITE_URL
+ID_HASH_SECRET=$(cat "$RUN_DIR/id-hash-secret")
 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$ANON_KEY
 SUPABASE_SECRET_KEY=$SERVICE_KEY
 ENV
 
 echo
-echo "Local Supabase is running at http://127.0.0.1:54321 (database: $DB)."
+echo "Local Supabase is running at http://127.0.0.1:54321 (database: $DB, brand: $BRAND)."
 echo "Settings were written to .env.local. Start the site with: npm run dev"
 echo "Make yourself an admin after registering:"
 echo "  $PSQL_SUPER -d $DB -c \"update public.profiles set role = 'admin' where email = 'you@example.com'\""

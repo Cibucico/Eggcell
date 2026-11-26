@@ -7,6 +7,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { Badge, EmptyState } from "@/components/ui/primitives";
 import { signOut } from "@/lib/actions/auth";
 import { requireProfile } from "@/lib/auth";
+import { VerificationPanel } from "@/components/site/verification-panel";
 import {
   getMyBookings,
   getMyCertificates,
@@ -18,22 +19,26 @@ import { formatDate, formatMoney, formatSessionTime } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "My account", robots: { index: false } };
 
-export default function DashboardPage() {
+export default function DashboardPage({ searchParams }: PageProps<"/dashboard">) {
   return (
     <div className="container-page py-12">
       <Suspense fallback={<p className="text-muted">Loading your account…</p>}>
-        <Dashboard />
+        <Dashboard searchParams={searchParams} />
       </Suspense>
     </div>
   );
 }
 
-async function Dashboard() {
-  const profile = await requireProfile("/dashboard");
-  const { training, booking } = brand.features;
+async function Dashboard({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const [profile, query] = await Promise.all([requireProfile("/dashboard"), searchParams]);
+  const { training, booking, meetingRoom } = brand.features;
   const [courses, live, bookings, certificates] = await Promise.all([
     training ? getMyCourses() : [],
-    training ? getMyLiveSessions() : [],
+    training || meetingRoom ? getMyLiveSessions() : [],
     booking ? getMyBookings() : [],
     training ? getMyCertificates() : [],
   ]);
@@ -66,6 +71,8 @@ async function Dashboard() {
           </form>
         </div>
       </div>
+
+      <VerificationPanel profile={profile} submitted={query.verification === "submitted"} />
 
       {training && (
         <Panel id="courses" icon={<GraduationCap className="h-5 w-5" aria-hidden />} title="My courses">
@@ -107,8 +114,8 @@ async function Dashboard() {
         </Panel>
       )}
 
-      {training && (
-        <Panel id="live" icon={<Video className="h-5 w-5" aria-hidden />} title="My live sessions">
+      {(training || meetingRoom) && (
+        <Panel id="live" icon={<Video className="h-5 w-5" aria-hidden />} title={meetingRoom ? "My webinars" : "My live sessions"}>
           {live.length === 0 ? (
             <EmptyState
               title="You are not registered for any live sessions"
@@ -134,7 +141,15 @@ async function Dashboard() {
                     )}
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {session.join_url ? (
+                    {meetingRoom && !session.join_url ? (
+                      <a
+                        href={`/meeting-room/${session.slug}`}
+                        className="inline-flex h-9 items-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-deep"
+                      >
+                        <Video className="h-4 w-4" aria-hidden />
+                        Enter the room
+                      </a>
+                    ) : session.join_url ? (
                       <a
                         href={session.join_url}
                         target="_blank"

@@ -22,7 +22,7 @@ export const getProfile = cache(async (): Promise<Profile | null> => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("profiles")
-    .select("id, email, full_name, phone, company, role")
+    .select("id, email, full_name, phone, company, role, verification_status")
     .eq("id", user.id)
     .maybeSingle();
   return (data as Profile | null) ?? null;
@@ -52,4 +52,14 @@ export async function requireStaff(): Promise<Profile> {
   const profile = await requireProfile("/admin");
   if (profile.role !== "admin" && profile.role !== "editor") redirect("/dashboard");
   return profile;
+}
+
+/**
+ * Whether this person may use members-only features (the meeting room) on a
+ * women-only site. Staff always may; members need an approved account.
+ */
+export function isApprovedMember(profile: Profile | null): boolean {
+  if (!profile) return false;
+  if (profile.role === "admin" || profile.role === "editor") return true;
+  return profile.verification_status === "approved";
 }

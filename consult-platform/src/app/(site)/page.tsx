@@ -1,6 +1,7 @@
 import { ArrowRight, ArrowUpRight, Video } from "lucide-react";
 import Link from "next/link";
 import { brand } from "@/config/brand";
+import { CommunityHome } from "@/components/home/community-home";
 import {
   CallToAction,
   CaseStudyCard,
@@ -20,6 +21,7 @@ import {
 } from "@/lib/data/content";
 
 export default async function HomePage() {
+  if (brand.hero.image) return <CommunityHome />;
   const [services, courses, studies, testimonials, sessions] = await Promise.all([
     getServices(),
     brand.features.training ? getCourses() : Promise.resolve([]),

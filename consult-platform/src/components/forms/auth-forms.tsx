@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useActionState } from "react";
+import { brand } from "@/config/brand";
 import {
   requestPasswordReset,
   signIn,
   signUp,
+  submitIdForVerification,
   updatePassword,
   updateProfile,
 } from "@/lib/actions/auth";
@@ -79,7 +81,15 @@ export function RegisterForm() {
         hint="At least 10 characters."
         error={e.password}
       />
-      <ConsentField error={e.consent} purpose="to create and manage my account" />
+      {brand.features.womenOnly && <IdNumberField error={e.id_number} />}
+      <ConsentField
+        error={e.consent}
+        purpose={
+          brand.features.womenOnly
+            ? "to create and manage my account, and to confirm that membership is for women"
+            : "to create and manage my account"
+        }
+      />
       <FormMessage state={state} />
       <SubmitButton pendingText="Creating account…" className="w-full">
         Create account
@@ -173,6 +183,33 @@ export function ProfileForm({ profile }: { profile: Profile }) {
       />
       <FormMessage state={state} />
       <SubmitButton pendingText="Saving…">Save changes</SubmitButton>
+    </form>
+  );
+}
+
+function IdNumberField({ error }: { error?: string }) {
+  return (
+    <TextField
+      label="South African ID number"
+      name="id_number"
+      inputMode="numeric"
+      autoComplete="off"
+      maxLength={16}
+      hint="Membership is for women. We check that the number is valid; we do not store your ID number."
+      error={error}
+    />
+  );
+}
+
+/** Lets a signed-in member submit her ID number for review. */
+export function VerifyIdForm() {
+  const [state, action] = useActionState(submitIdForVerification, idleState);
+  const e = state.fieldErrors ?? {};
+  return (
+    <form action={action} className="space-y-4">
+      <IdNumberField error={e.id_number} />
+      <FormMessage state={state} />
+      <SubmitButton pendingText="Checking…">Submit for approval</SubmitButton>
     </form>
   );
 }

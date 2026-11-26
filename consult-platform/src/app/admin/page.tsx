@@ -1,7 +1,8 @@
-import { CalendarDays, GraduationCap, Inbox, Landmark, Users, Wallet } from "lucide-react";
+import { CalendarDays, GraduationCap, Inbox, Landmark, MessageCircle, UserCheck, Users, Wallet } from "lucide-react";
 import Link from "next/link";
+import { brand } from "@/config/brand";
 import { AdminHeader, Panel } from "@/components/admin/ui";
-import { resources } from "@/lib/admin/resources";
+import { activeResources as resources } from "@/lib/admin/resources";
 import { requireStaff } from "@/lib/auth";
 import { isPayfastConfigured, payfastSandbox } from "@/lib/payfast";
 import { createClient } from "@/lib/supabase/server";
@@ -15,6 +16,8 @@ type Overview = {
   active_enrolments: number;
   revenue_cents: number;
   revenue_30d_cents: number;
+  pending_verifications: number;
+  unread_chats: number;
 };
 
 export default async function AdminHome() {
@@ -29,13 +32,22 @@ export default async function AdminHome() {
     overview = data as Overview | null;
   }
 
+  const f = brand.features;
   const stats = overview
     ? [
+        ...(f.womenOnly
+          ? [{ label: "Members to approve", value: overview.pending_verifications, href: "/admin/users", icon: UserCheck }]
+          : []),
+        ...(f.liveChat
+          ? [{ label: "Unanswered chats", value: overview.unread_chats, href: "/admin/chat", icon: MessageCircle }]
+          : []),
         { label: "New enquiries", value: overview.new_enquiries, href: "/admin/enquiries", icon: Inbox },
         { label: "Consultations to confirm", value: overview.pending_bookings, href: "/admin/bookings", icon: CalendarDays },
         { label: "New investor interest", value: overview.new_investor_leads, href: "/admin/investors", icon: Landmark },
         { label: "Registered users", value: overview.members, href: "/admin/users", icon: Users },
-        { label: "Course enrolments", value: overview.active_enrolments, href: "/admin/orders", icon: GraduationCap },
+        ...(f.training
+          ? [{ label: "Course enrolments", value: overview.active_enrolments, href: "/admin/orders", icon: GraduationCap }]
+          : []),
         { label: "Sales, last 30 days", value: formatMoney(overview.revenue_30d_cents), href: "/admin/orders", icon: Wallet },
       ]
     : [];

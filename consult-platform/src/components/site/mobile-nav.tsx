@@ -4,9 +4,22 @@ import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { NavItem } from "@/config/brand";
 import { ButtonLink } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { NavLinks } from "./nav-links";
 
-export function MobileNav({ items, showBooking }: { items: NavItem[]; showBooking: boolean }) {
+/**
+ * Menu button and the panel it opens. In the "bar" header it shows on phones
+ * only; in the "centered" header it is the main menu at every size.
+ */
+export function MobileNav({
+  items,
+  showBooking,
+  always = false,
+}: {
+  items: NavItem[];
+  showBooking: boolean;
+  always?: boolean;
+}) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -17,12 +30,12 @@ export function MobileNav({ items, showBooking }: { items: NavItem[]; showBookin
   }, [open]);
 
   return (
-    <div className="lg:hidden">
+    <div className={cn(!always && "lg:hidden")}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        aria-controls="mobile-nav"
+        aria-controls="site-menu"
         aria-label={open ? "Close menu" : "Open menu"}
         className="flex h-11 w-11 items-center justify-center rounded-full bg-surface text-ink hover:bg-line"
       >
@@ -30,14 +43,17 @@ export function MobileNav({ items, showBooking }: { items: NavItem[]; showBookin
       </button>
       {open && (
         <div
-          id="mobile-nav"
-          className="animate-rise absolute inset-x-3 top-full mt-2 rounded-[1.75rem] border border-ink/10 bg-bg p-4 shadow-2xl sm:inset-x-5"
+          id="site-menu"
+          className={cn(
+            "animate-rise absolute top-full mt-2 rounded-[1.75rem] border border-ink/10 bg-bg p-4 shadow-2xl",
+            always ? "inset-x-3 sm:inset-x-5 lg:right-auto lg:w-80" : "inset-x-3 sm:inset-x-5",
+          )}
         >
-          <nav aria-label="Mobile">
+          <nav aria-label="Menu">
             <NavLinks items={items} orientation="vertical" onNavigate={() => setOpen(false)} />
           </nav>
           <div className="mt-4 grid gap-2 border-t border-line pt-4">
-            <ButtonLink href="/dashboard" variant="outline" onClick={() => setOpen(false)}>
+            <ButtonLink href="/dashboard" variant="outline" onClick={() => setOpen(false)} prefetch={false}>
               My account
             </ButtonLink>
             {showBooking && (

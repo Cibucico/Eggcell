@@ -39,17 +39,17 @@ export function EnquiryForm({ services }: { services: ServiceOption[] }) {
         <TextField label="Full name" name="name" autoComplete="name" error={e.name} />
         <TextField label="Email" name="email" type="email" autoComplete="email" error={e.email} />
         <TextField label="Phone" name="phone" type="tel" autoComplete="tel" optional error={e.phone} />
-        <TextField label="Company" name="company" autoComplete="organization" optional error={e.company} />
+        <TextField label="Business name" name="company" autoComplete="organization" optional error={e.company} />
       </div>
       <SelectField
-        label="What can we help with?"
+        label="What would you like to talk about?"
         name="service_id"
         optional
         defaultValue={defaultService}
         key={defaultService}
         error={e.service_id}
       >
-        <option value="">General enquiry</option>
+        <option value="">Something else</option>
         {services.map((s) => (
           <option key={s.id} value={s.id}>
             {s.title}
@@ -60,7 +60,7 @@ export function EnquiryForm({ services }: { services: ServiceOption[] }) {
         label="Your message"
         name="message"
         error={e.message}
-        placeholder="Tell us about your business and what you would like to achieve."
+        placeholder="Tell us about your business, where it is now and what you would like to achieve."
       />
       <ConsentField error={e.consent} purpose="to respond to this enquiry" />
       <FormMessage state={state} />
@@ -90,7 +90,7 @@ export function BookingForm({
         <TextField label="Full name" name="name" autoComplete="name" error={e.name} />
         <TextField label="Email" name="email" type="email" autoComplete="email" error={e.email} />
         <TextField label="Phone" name="phone" type="tel" autoComplete="tel" optional error={e.phone} />
-        <TextField label="Company" name="company" autoComplete="organization" optional error={e.company} />
+        <TextField label="Business name" name="company" autoComplete="organization" optional error={e.company} />
       </div>
       <SelectField
         label="Topic"

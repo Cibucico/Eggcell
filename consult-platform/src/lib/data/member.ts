@@ -1,5 +1,5 @@
 import "server-only";
-import { seedCourses } from "@/content/seed";
+import { starter } from "@/content";
 import { getUser } from "@/lib/auth";
 import { parseBlocks, type Block } from "@/lib/blocks";
 import { isSupabaseConfigured } from "@/lib/env";
@@ -88,7 +88,7 @@ export async function getCourseAccess(
  */
 export async function getLessonBlocks(lessonId: string): Promise<Block[] | null> {
   if (!isSupabaseConfigured) {
-    const lesson = seedCourses
+    const lesson = starter.seedCourses
       .flatMap((c) => c.modules)
       .flatMap((m) => m.lessons)
       .find((l) => l.id === lessonId);

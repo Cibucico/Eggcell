@@ -68,6 +68,10 @@ export const registerSchema = z.object({
   consent,
 });
 
+export const idNumberSchema = z.object({
+  id_number: z.string().trim().min(1, "Enter your South African ID number").max(20),
+});
+
 export const loginSchema = z.object({
   email,
   password: z.string().min(1, "Enter your password"),

@@ -2,6 +2,7 @@ import { LeadCard, NotesField, SaveButton, StatusSelect } from "@/components/adm
 import { AdminHeader, Feedback, inputClass } from "@/components/admin/ui";
 import { Badge, EmptyState } from "@/components/ui/primitives";
 import { updateBooking } from "@/lib/actions/admin";
+import { brand } from "@/config/brand";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatMoney } from "@/lib/utils";
@@ -76,6 +77,19 @@ export default async function BookingsPage({ searchParams }: PageProps<"/admin/b
                     className={inputClass}
                   />
                 </label>
+                {brand.features.meetingRoom && row.mode === "online" && (
+                  <label className="flex items-start gap-2 text-sm">
+                    <input type="checkbox" name="use_room" className="mt-0.5 h-4 w-4 accent-[var(--brand-primary)]" />
+                    <span>
+                      Use our meeting room
+                      <span className="block text-xs text-muted">
+                        {row.user_id
+                          ? "Creates a private room for this client and you."
+                          : "The client booked without an account, so she cannot enter the room. Paste a Teams or Meet link instead."}
+                      </span>
+                    </span>
+                  </label>
+                )}
                 <NotesField value={row.admin_notes} />
                 <SaveButton />
               </form>

@@ -37,7 +37,7 @@ const ERRORS: Record<string, string> = {
 };
 
 export default async function LiveSessionPage({ params, searchParams }: PageProps<"/live/[slug]">) {
-  if (!brand.features.training) notFound();
+  if (!brand.features.training && !brand.features.meetingRoom) notFound();
   const session = await getLiveSession((await params).slug);
   if (!session) notFound();
 

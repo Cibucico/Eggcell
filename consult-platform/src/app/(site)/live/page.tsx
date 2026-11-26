@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function LivePage() {
-  if (!brand.features.training) notFound();
+  if (!brand.features.training && !brand.features.meetingRoom) notFound();
   const sessions = await getUpcomingLiveSessions();
   return (
     <>

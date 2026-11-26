@@ -1,13 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
-import {
-  seedCaseStudies,
-  seedCourses,
-  seedLiveSessions,
-  seedServices,
-  seedTeam,
-  seedTestimonials,
-} from "@/content/seed";
+import { starter } from "@/content";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createPublicClient } from "@/lib/supabase/server";
 import type {
@@ -19,7 +12,9 @@ import type {
   Service,
   TeamMember,
   Testimonial,
+  ToolkitArticleSummary,
 } from "@/lib/types";
+import { parseBlocks, type Block } from "@/lib/blocks";
 
 /**
  * Public content. Every function is cached and shared between visitors, and
@@ -44,7 +39,7 @@ export async function getServices(): Promise<Service[]> {
   "use cache";
   cacheLife("hours");
   cacheTag("services");
-  if (!isSupabaseConfigured) return seedServices;
+  if (!isSupabaseConfigured) return starter.seedServices;
   const { data, error } = await createPublicClient()
     .from("services")
     .select(SERVICE_COLS)
@@ -63,7 +58,7 @@ export async function getService(slug: string): Promise<Service | null> {
   "use cache";
   cacheLife("hours");
   cacheTag("services");
-  if (!isSupabaseConfigured) return seedServices.find((s) => s.slug === slug) ?? null;
+  if (!isSupabaseConfigured) return starter.seedServices.find((s) => s.slug === slug) ?? null;
   const { data, error } = await createPublicClient()
     .from("services")
     .select(SERVICE_COLS)
@@ -78,7 +73,7 @@ export async function getTeam(): Promise<TeamMember[]> {
   "use cache";
   cacheLife("hours");
   cacheTag("team_members");
-  if (!isSupabaseConfigured) return seedTeam;
+  if (!isSupabaseConfigured) return starter.seedTeam;
   const { data, error } = await createPublicClient()
     .from("team_members")
     .select(TEAM_COLS)
@@ -92,7 +87,7 @@ export async function getCaseStudies(): Promise<CaseStudy[]> {
   "use cache";
   cacheLife("hours");
   cacheTag("case_studies");
-  if (!isSupabaseConfigured) return seedCaseStudies;
+  if (!isSupabaseConfigured) return starter.seedCaseStudies;
   const { data, error } = await createPublicClient()
     .from("case_studies")
     .select(CASE_COLS)
@@ -109,7 +104,7 @@ export async function getCaseStudy(slug: string): Promise<CaseStudy | null> {
   "use cache";
   cacheLife("hours");
   cacheTag("case_studies");
-  if (!isSupabaseConfigured) return seedCaseStudies.find((c) => c.slug === slug) ?? null;
+  if (!isSupabaseConfigured) return starter.seedCaseStudies.find((c) => c.slug === slug) ?? null;
   const { data, error } = await createPublicClient()
     .from("case_studies")
     .select(CASE_COLS)
@@ -126,7 +121,7 @@ export async function getTestimonials(): Promise<Testimonial[]> {
   "use cache";
   cacheLife("hours");
   cacheTag("testimonials");
-  if (!isSupabaseConfigured) return seedTestimonials;
+  if (!isSupabaseConfigured) return starter.seedTestimonials;
   const { data, error } = await createPublicClient()
     .from("testimonials")
     .select(TESTIMONIAL_COLS)
@@ -141,7 +136,7 @@ export async function getCourses(): Promise<Course[]> {
   cacheLife("hours");
   cacheTag("courses");
   if (!isSupabaseConfigured) {
-    return seedCourses.map(({ modules: _modules, ...course }) => course);
+    return starter.seedCourses.map(({ modules: _modules, ...course }) => course);
   }
   const { data, error } = await createPublicClient()
     .from("courses")
@@ -160,7 +155,7 @@ export async function getCourseWithOutline(slug: string): Promise<CourseWithOutl
   cacheLife("hours");
   cacheTag("courses");
   if (!isSupabaseConfigured) {
-    const course = seedCourses.find((c) => c.slug === slug);
+    const course = starter.seedCourses.find((c) => c.slug === slug);
     if (!course) return null;
     return {
       ...course,
@@ -201,7 +196,7 @@ export async function getUpcomingLiveSessions(): Promise<LiveSessionListing[]> {
   cacheLife("minutes");
   cacheTag("live_sessions");
   if (!isSupabaseConfigured) {
-    return seedLiveSessions.map(({ join_url: _join, ...session }) => ({
+    return starter.seedLiveSessions.map(({ join_url: _join, ...session }) => ({
       ...session,
       places_left: session.capacity,
     }));
@@ -239,7 +234,7 @@ export async function getLiveSession(slug: string): Promise<LiveSessionListing |
   cacheLife("minutes");
   cacheTag("live_sessions");
   if (!isSupabaseConfigured) {
-    const session = seedLiveSessions.find((s) => s.slug === slug);
+    const session = starter.seedLiveSessions.find((s) => s.slug === slug);
     if (!session) return null;
     const { join_url: _join, ...rest } = session;
     return { ...rest, places_left: rest.capacity };
@@ -262,6 +257,49 @@ export async function getLiveSession(slug: string): Promise<LiveSessionListing |
     (row) => row.session_id === session.id,
   );
   return { ...session, places_left: Math.max(0, session.capacity - Number(count?.taken ?? 0)) };
+}
+
+const TOOLKIT_COLS = "id, category, slug, title, summary, reading_minutes, featured, sort_order, blocks";
+
+export type ToolkitArticle = ToolkitArticleSummary & { blocks: Block[] };
+
+function toSummary({ blocks, ...article }: ToolkitArticle): ToolkitArticleSummary {
+  return { ...article, has_video: blocks.some((b) => b.type === "video" || b.type === "embed") };
+}
+
+/** Every published toolkit article, without the body, in reading order. */
+export async function getToolkitArticles(): Promise<ToolkitArticleSummary[]> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("toolkit_articles");
+  if (!isSupabaseConfigured) return starter.seedToolkit.map(toSummary);
+  const { data, error } = await createPublicClient()
+    .from("toolkit_articles")
+    .select(TOOLKIT_COLS)
+    .eq("published", true)
+    .order("sort_order")
+    .order("title");
+  if (error) fail("toolkit", error.message);
+  return (data as (ToolkitArticleSummary & { blocks: unknown })[]).map((row) =>
+    toSummary({ ...row, blocks: parseBlocks(row.blocks) }),
+  );
+}
+
+export async function getToolkitArticle(slug: string): Promise<ToolkitArticle | null> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("toolkit_articles");
+  if (!isSupabaseConfigured) return starter.seedToolkit.find((a) => a.slug === slug) ?? null;
+  const { data, error } = await createPublicClient()
+    .from("toolkit_articles")
+    .select(TOOLKIT_COLS)
+    .eq("slug", slug)
+    .eq("published", true)
+    .maybeSingle();
+  if (error) fail("toolkit article", error.message);
+  if (!data) return null;
+  const row = data as ToolkitArticleSummary & { blocks: unknown };
+  return { ...row, blocks: parseBlocks(row.blocks) };
 }
 
 export function countLessons(course: CourseWithOutline): number {

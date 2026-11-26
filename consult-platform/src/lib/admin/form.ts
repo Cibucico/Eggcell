@@ -1,3 +1,4 @@
+import { blocksSchema } from "@/lib/blocks";
 import { slugify } from "@/lib/utils";
 import type { Field, Resource } from "./resources";
 
@@ -17,6 +18,8 @@ export function toFormValue(field: Field, value: unknown, discountKind?: unknown
       return String(Number(value) / 100);
     case "list":
       return Array.isArray(value) ? value.join("\n") : "";
+    case "blocks":
+      return JSON.stringify(Array.isArray(value) ? value : []);
     case "metrics":
       return Array.isArray(value)
         ? value.map((m: { label?: string; value?: string }) => `${m.label ?? ""} | ${m.value ?? ""}`).join("\n")
@@ -83,6 +86,24 @@ export function parseResourceForm(resource: Resource, formData: FormData): Parse
           .filter(Boolean)
           .slice(0, 40);
         break;
+      case "blocks": {
+        let json: unknown = [];
+        try {
+          json = raw === "" ? [] : JSON.parse(raw);
+        } catch {
+          fail("The content could not be read. Reload the page and try again.");
+          break;
+        }
+        const parsed = blocksSchema.safeParse(json);
+        if (!parsed.success) {
+          const issue = parsed.error.issues[0];
+          const where = typeof issue.path[0] === "number" ? `Block ${issue.path[0] + 1}: ` : "";
+          fail(`${where}${issue.message}`);
+        } else {
+          target[field.name] = parsed.data;
+        }
+        break;
+      }
       case "metrics":
         target[field.name] = raw
           .split("\n")

@@ -5,6 +5,8 @@ import { FormMessage, SubmitButton } from "@/components/forms/fields";
 import { saveResource } from "@/lib/actions/admin";
 import type { Field } from "@/lib/admin/resources";
 import { idleState } from "@/lib/types";
+import { parseBlocks } from "@/lib/blocks";
+import { BlockBuilder } from "./block-builder";
 import { inputClass } from "./ui";
 
 export function ResourceForm({
@@ -60,6 +62,22 @@ export function ResourceForm({
         }
 
         const text = typeof value === "string" ? value : "";
+        if (field.type === "blocks") {
+          let initial: unknown = [];
+          try {
+            initial = JSON.parse(text || "[]");
+          } catch {
+            initial = [];
+          }
+          return (
+            <div key={field.name}>
+              <p className="mb-1.5 block text-sm font-medium">{field.label}</p>
+              {field.hint && <p className="mb-3 text-xs text-muted">{field.hint}</p>}
+              <BlockBuilder initial={parseBlocks(initial)} />
+              {error && <p className="mt-2 text-xs font-medium text-danger">{error}</p>}
+            </div>
+          );
+        }
         let control;
         if (field.type === "textarea" || field.type === "list" || field.type === "metrics") {
           control = (

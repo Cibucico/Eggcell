@@ -100,12 +100,29 @@ export type LiveSession = {
   sort_order: number;
 };
 
+export type ToolkitCategory = "operations" | "marketing" | "finance";
+
+export type ToolkitArticleSummary = {
+  id: string;
+  category: ToolkitCategory;
+  slug: string;
+  title: string;
+  summary: string;
+  reading_minutes: number;
+  featured: boolean;
+  sort_order: number;
+  /** True when the article includes at least one video. */
+  has_video?: boolean;
+};
+
 export type BookingStatus = "requested" | "confirmed" | "completed" | "cancelled";
 export type LeadStatus = "new" | "in_progress" | "closed";
 export type OrderStatus = "pending" | "paid" | "failed" | "cancelled";
 export type EnrolmentStatus = "active" | "completed" | "refunded";
 export type UserRole = "member" | "editor" | "admin";
 export type OrderKind = "course" | "live_session" | "consultation";
+
+export type VerificationStatus = "unverified" | "pending" | "approved" | "rejected";
 
 export type Profile = {
   id: string;
@@ -114,6 +131,7 @@ export type Profile = {
   phone: string | null;
   company: string | null;
   role: UserRole;
+  verification_status: VerificationStatus;
 };
 
 /** Result returned by every form server action. */

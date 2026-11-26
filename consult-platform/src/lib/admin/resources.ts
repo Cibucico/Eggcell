@@ -1,4 +1,8 @@
 import { serviceIconNames } from "@/components/ui/icon";
+import { brand } from "@/config/brand";
+import type { BrandConfig } from "@/config/brand.types";
+
+type BrandFeatures = BrandConfig["features"];
 
 /**
  * Describes the content the admin area can manage. One entry here gives a
@@ -18,7 +22,8 @@ export type FieldType =
   | "metrics"
   | "datetime"
   | "url"
-  | "code";
+  | "code"
+  | "blocks";
 
 export type Field = {
   name: string;
@@ -53,6 +58,8 @@ export type Resource = {
   slugFrom?: string;
   companion?: { table: string; key: string };
   fields: Field[];
+  /** Only offered when this brand feature is on (any of them, if several). */
+  features?: (keyof BrandFeatures)[];
   /** Follow-up link shown on the edit page, e.g. to a course's lessons. */
   extraLink?: { label: string; href: (id: string) => string };
 };
@@ -135,6 +142,7 @@ export const resources: Resource[] = [
   },
   {
     key: "case-studies",
+    features: ["caseStudies"],
     table: "case_studies",
     label: "Case studies",
     singular: "case study",
@@ -177,6 +185,7 @@ export const resources: Resource[] = [
   },
   {
     key: "courses",
+    features: ["training"],
     table: "courses",
     label: "Courses",
     singular: "course",
@@ -214,8 +223,9 @@ export const resources: Resource[] = [
   },
   {
     key: "live-sessions",
+    features: ["training", "meetingRoom"],
     table: "live_sessions",
-    label: "Live sessions",
+    label: brand.features.meetingRoom ? "Webinars and meetings" : "Live sessions",
     singular: "live session",
     access: "staff",
     titleField: "title",
@@ -234,14 +244,62 @@ export const resources: Resource[] = [
       { name: "platform", label: "Platform", type: "text", initial: "Zoom", hint: "Zoom, Microsoft Teams, Google Meet…", max: 40 },
       { name: "price_cents", label: "Price (R)", type: "money", initial: 0, hint: "0 makes the session free to register." },
       { name: "capacity", label: "Places available", type: "number", nullable: true, hint: "Leave blank for unlimited." },
-      { name: "join_url", label: "Joining link", type: "url", companion: true, hint: "The Zoom link. Only people who have registered can see it." },
+      {
+        name: "join_url",
+        label: "External meeting link",
+        type: "url",
+        companion: true,
+        hint: brand.features.meetingRoom
+          ? "Optional. Paste a Teams, Google Meet or Zoom link to hold this session there instead of in the site's meeting room. Only registered members see it."
+          : "The Zoom, Teams or Meet link. Only people who have registered can see it.",
+      },
       { name: "passcode", label: "Passcode", type: "text", companion: true, max: 60 },
       { name: "recording_url", label: "Recording link", type: "url", companion: true, hint: "Add after the session so registered people can watch again." },
       published,
     ],
   },
   {
+    key: "toolkit",
+    features: ["toolkit"],
+    table: "toolkit_articles",
+    label: "Toolkit articles",
+    singular: "toolkit article",
+    access: "staff",
+    titleField: "title",
+    orderBy: { column: "category", ascending: true },
+    tag: "toolkit_articles",
+    slugFrom: "title",
+    fields: [
+      { name: "title", label: "Title", type: "text", required: true, column: true, max: 200 },
+      slug,
+      {
+        name: "category",
+        label: "Area",
+        type: "select",
+        initial: "operations",
+        column: true,
+        options: [
+          { value: "operations", label: "Operations" },
+          { value: "marketing", label: "Marketing" },
+          { value: "finance", label: "Finance" },
+        ],
+      },
+      { name: "summary", label: "Summary", type: "textarea", hint: "One or two sentences shown in the list.", max: 400 },
+      {
+        name: "blocks",
+        label: "Content",
+        type: "blocks",
+        hint: "Add text, videos (YouTube or Vimeo links), highlight boxes, quizzes and exercises. A 'New screen' block becomes a section heading.",
+      },
+      { name: "reading_minutes", label: "Reading time (minutes)", type: "number", initial: 5 },
+      { name: "featured", label: "Show on the home page", type: "boolean", initial: false },
+      { ...sortOrder, hint: "Reading order within its area. Lower numbers come first." },
+      published,
+    ],
+  },
+  {
     key: "discounts",
+    features: ["training", "booking"],
     table: "discount_codes",
     label: "Discount codes",
     singular: "discount code",
@@ -281,6 +339,11 @@ export const resources: Resource[] = [
   },
 ];
 
+/** Resources that apply to this brand's features. */
+export const activeResources = resources.filter(
+  (r) => !r.features || r.features.some((f) => brand.features[f]),
+);
+
 export function getResource(key: string): Resource | undefined {
-  return resources.find((r) => r.key === key);
+  return activeResources.find((r) => r.key === key);
 }

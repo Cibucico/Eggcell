@@ -72,12 +72,15 @@ export function SiteFooter() {
                 {brand.contact.email}
               </a>
             </li>
+            {brand.contact.phone && (
             <li className="flex gap-3">
               <Phone className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden />
               <a href={`tel:${brand.contact.phone.replace(/\s/g, "")}`} className="hover:text-accent">
                 {brand.contact.phone}
               </a>
             </li>
+            )}
+            {brand.contact.addressLines.length > 0 && (
             <li className="flex gap-3">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden />
               <span>
@@ -88,12 +91,13 @@ export function SiteFooter() {
                 ))}
               </span>
             </li>
+            )}
           </ul>
         </div>
       </div>
       <div aria-hidden className="container-page relative select-none overflow-hidden">
         <p className="font-heading whitespace-nowrap text-[18vw] font-medium italic leading-[0.8] tracking-tighter text-deep-fg/[0.06] lg:text-[13rem]">
-          {brand.name.split(" ")[0]}
+          {brand.name.split(" ")[0].replace(/^i(?=[A-Z])/, "i")}
         </p>
       </div>
       <div className="relative border-t border-deep-fg/10">
