@@ -27,12 +27,13 @@ export async function CommunityHome() {
   return (
     <>
       {/* ---------------------------------------------------------------- Hero */}
-      <section className="relative overflow-hidden">
+      {/* Deep plum ground, so the painting's dark background melts into the page. */}
+      <section className="grain relative -mt-[4.75rem] overflow-hidden bg-deep pt-[4.75rem] text-deep-fg">
         <div aria-hidden className="pointer-events-none absolute inset-0">
-          <div className="glow -left-40 top-10 h-[28rem] w-[28rem] opacity-40" style={{ background: "var(--brand-palette-1)" }} />
-          <div className="glow -right-40 top-40 h-[30rem] w-[30rem] opacity-30" style={{ background: "var(--brand-palette-2)" }} />
+          <div className="glow -left-48 top-24 h-[30rem] w-[30rem] opacity-35" style={{ background: "var(--brand-palette-5)" }} />
+          <div className="glow -right-48 top-64 h-[32rem] w-[32rem] opacity-30" style={{ background: "var(--brand-palette-3)" }} />
         </div>
-        <div className="container-page relative flex flex-col items-center pb-20 pt-12 text-center sm:pt-16">
+        <div className="container-page relative flex flex-col items-center pb-20 pt-14 text-center sm:pt-20">
           <Eyebrow className="animate-rise">{brand.hero.eyebrow}</Eyebrow>
           <h1
             className="animate-rise mt-5 max-w-3xl text-5xl font-medium leading-[1.02] tracking-tight sm:text-6xl lg:text-7xl"
@@ -41,35 +42,35 @@ export async function CommunityHome() {
             <Accent text={brand.hero.headline} />
           </h1>
 
-          <div className="animate-rise relative mt-12 w-full max-w-[22rem] sm:max-w-[26rem]" style={{ animationDelay: "160ms" }}>
-            {/* Rings in the client's palette around the round picture. */}
-            <div aria-hidden className="absolute -inset-5 rounded-full border-2" style={{ borderColor: "var(--brand-palette-1)" }} />
-            <div aria-hidden className="absolute -inset-10 rounded-full border" style={{ borderColor: "var(--brand-palette-1)", opacity: 0.6 }} />
-            <div aria-hidden className="absolute -right-3 top-6 h-6 w-6 rounded-full" style={{ background: "var(--brand-palette-3)" }} />
-            <div aria-hidden className="absolute -left-4 bottom-12 h-4 w-4 rounded-full" style={{ background: "var(--brand-palette-4)" }} />
+          <div className="animate-rise relative mt-4 w-full max-w-[28rem] sm:max-w-[36rem]" style={{ animationDelay: "160ms" }}>
+            {/* The painting fades softly into the page instead of sitting in a frame. */}
             <Image
               src={image.src}
               alt={image.alt}
               width={image.width}
               height={image.height}
               priority
-              sizes="(min-width: 640px) 26rem, 22rem"
-              className="relative aspect-square w-full rounded-full object-cover shadow-[0_30px_60px_-25px_var(--brand-primary)]"
+              sizes="(min-width: 640px) 36rem, 100vw"
+              className="aspect-square w-full object-cover"
+              style={{
+                maskImage: "radial-gradient(ellipse 50% 50% at 50% 45%, #000 40%, rgba(0,0,0,0.6) 62%, transparent 82%)",
+                WebkitMaskImage: "radial-gradient(ellipse 50% 50% at 50% 45%, #000 40%, rgba(0,0,0,0.6) 62%, transparent 82%)",
+              }}
             />
           </div>
 
-          <p className="animate-rise mt-14 max-w-2xl text-lg leading-relaxed text-muted" style={{ animationDelay: "240ms" }}>
+          <p className="animate-rise -mt-6 max-w-2xl text-lg leading-relaxed text-deep-fg/80" style={{ animationDelay: "240ms" }}>
             {brand.hero.subheadline}
           </p>
           <div className="animate-rise mt-8 flex flex-wrap justify-center gap-3" style={{ animationDelay: "300ms" }}>
             {features.toolkit && (
-              <ButtonLink href="/toolkit" size="lg">
+              <ButtonLink href="/toolkit" variant="accent" size="lg">
                 Explore the {brand.toolkit?.label.toLowerCase() ?? "toolkit"}
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </ButtonLink>
             )}
             {features.booking && (
-              <ButtonLink href="/book" variant="outline" size="lg">
+              <ButtonLink href="/book" variant="inverse" size="lg">
                 Book a consultation
               </ButtonLink>
             )}
