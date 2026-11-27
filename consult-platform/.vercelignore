@@ -1,0 +1,8 @@
+.env*
+!.env.example
+.local-supabase
+.next
+node_modules
+e2e
+tests
+supabase/tests
