@@ -102,3 +102,16 @@ export function mainNav(): NavItem[] {
   };
   return [...enabled].sort((a, b) => rank(a.href) - rank(b.href));
 }
+
+/** What a member account gives access to, in plain words, for this brand. */
+export function accountIncludes(): string {
+  const f = brand.features;
+  const parts = [
+    f.training && "your courses",
+    f.meetingRoom ? "webinars in the meeting room" : f.training && "live sessions",
+    f.training && "certificates",
+    f.booking && "consultations",
+  ].filter(Boolean) as string[];
+  if (parts.length === 0) return "your account";
+  return parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}`;
+}

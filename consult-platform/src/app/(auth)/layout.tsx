@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { brand } from "@/config/brand";
+import { accountIncludes, brand } from "@/config/brand";
 import { Logo } from "@/components/site/logo";
 import { PreviewBanner } from "@/components/site/preview-banner";
 import { HeroPattern } from "@/components/ui/primitives";
@@ -15,8 +15,7 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
           <div className="relative">
             <p className="font-heading text-3xl font-semibold leading-snug">{brand.tagline}</p>
             <p className="mt-4 max-w-md text-deep-fg/70">
-              Your account gives you access to your courses, live sessions, certificates and
-              consultation bookings.
+              Your account gives you access to {accountIncludes()}.
             </p>
           </div>
           <p className="relative text-xs text-deep-fg/50">{brand.legalName}</p>

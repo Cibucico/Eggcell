@@ -8,7 +8,7 @@ export default function Page() {
   return (
     <>
       <h1 className="text-3xl font-semibold">Welcome back</h1>
-      <p className="mt-2 mb-8 text-muted">Sign in to continue your courses and manage your bookings.</p>
+      <p className="mt-2 mb-8 text-muted">Sign in to your account.</p>
       <Suspense fallback={<p className="text-sm text-muted">Loading…</p>}>
         <LoginForm />
       </Suspense>
