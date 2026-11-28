@@ -22,7 +22,7 @@ const steps = [
   },
   {
     icon: Video,
-    title: "Meet a partner",
+    title: "Meet a consultant",
     text: "A free 30-minute conversation, online or in person, about your business and goals.",
   },
   {
@@ -39,7 +39,7 @@ export default function BookPage() {
       <PageHeader
         eyebrow="Book a consultation"
         title="A free first conversation, with no obligation"
-        intro="Thirty minutes with a partner to understand your situation and see whether we are the right fit."
+        intro="Thirty minutes with one of our consultants to understand your situation and see whether we are the right fit."
       />
       <Section>
         <div className="grid gap-12 lg:grid-cols-[1.5fr_1fr]">

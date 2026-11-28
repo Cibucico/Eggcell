@@ -57,7 +57,7 @@ export default async function TrainingPage() {
           <SectionHeading
             eyebrow="Live sessions"
             title="Join us live"
-            intro="Live online sessions with our partners. Register to get the joining link."
+            intro="Live online sessions with our team. Register to get the joining link."
           />
           <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {sessions.map((session) => (

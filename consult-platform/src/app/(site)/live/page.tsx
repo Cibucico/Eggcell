@@ -19,7 +19,7 @@ export default async function LivePage() {
       <PageHeader
         eyebrow="Live sessions"
         title="Join us live"
-        intro="Live online sessions with our partners. Register to get the joining link and a place in the room."
+        intro="Live online sessions with our team. Register to get the joining link and a place in the room."
       />
       <Section>
         {sessions.length === 0 ? (

@@ -328,9 +328,13 @@ export async function updateBooking(formData: FormData) {
         "",
         `Your consultation with ${brand.name} is confirmed for ${formatDate(before.preferred_date)} at ${before.preferred_time} (South African time).`,
         values.meeting_link ? `\nJoin here: ${values.meeting_link}` : "",
-        before.mode === "in_person" ? `\nWhere: ${brand.contact.addressLines.join(", ")}` : "",
+        before.mode === "in_person" && brand.contact.addressLines.length > 0
+          ? `\nWhere: ${brand.contact.addressLines.join(", ")}`
+          : "",
         "",
-        `If you need to change the time, reply to this email or call ${brand.contact.phone}.`,
+        brand.contact.phone
+          ? `If you need to change the time, reply to this email or call ${brand.contact.phone}.`
+          : "If you need to change the time, reply to this email.",
         "",
         brand.name,
       ].join("\n"),

@@ -37,11 +37,13 @@ export default async function ContactPage() {
                   {contact.email}
                 </a>
               </ContactRow>
-              <ContactRow icon={<Phone className="h-5 w-5" aria-hidden />} label="Phone">
-                <a href={`tel:${contact.phone.replace(/\s/g, "")}`} className="text-primary hover:underline">
-                  {contact.phone}
-                </a>
-              </ContactRow>
+              {contact.phone && (
+                <ContactRow icon={<Phone className="h-5 w-5" aria-hidden />} label="Phone">
+                  <a href={`tel:${contact.phone.replace(/\s/g, "")}`} className="text-primary hover:underline">
+                    {contact.phone}
+                  </a>
+                </ContactRow>
+              )}
               {contact.whatsapp && (
                 <ContactRow icon={<MessageCircle className="h-5 w-5" aria-hidden />} label="WhatsApp">
                   <a
@@ -54,13 +56,15 @@ export default async function ContactPage() {
                   </a>
                 </ContactRow>
               )}
-              <ContactRow icon={<MapPin className="h-5 w-5" aria-hidden />} label="Office">
-                {contact.addressLines.map((line) => (
-                  <span key={line} className="block">
-                    {line}
-                  </span>
-                ))}
-              </ContactRow>
+              {contact.addressLines.length > 0 && (
+                <ContactRow icon={<MapPin className="h-5 w-5" aria-hidden />} label="Office">
+                  {contact.addressLines.map((line) => (
+                    <span key={line} className="block">
+                      {line}
+                    </span>
+                  ))}
+                </ContactRow>
+              )}
               <ContactRow icon={<Clock className="h-5 w-5" aria-hidden />} label="Hours">
                 {contact.hours}
               </ContactRow>

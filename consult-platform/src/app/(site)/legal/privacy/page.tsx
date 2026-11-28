@@ -116,8 +116,12 @@ export default function PrivacyPage() {
       <p>
         {legalName}
         <br />
-        {contact.addressLines.join(", ")}
-        <br />
+        {contact.addressLines.length > 0 && (
+          <>
+            {contact.addressLines.join(", ")}
+            <br />
+          </>
+        )}
         <a href={`mailto:${legal.informationOfficerEmail}`}>{legal.informationOfficerEmail}</a>
       </p>
     </LegalPage>

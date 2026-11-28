@@ -70,7 +70,7 @@ export default function InvestorsPage() {
           <SectionHeading
             eyebrow="Get in touch"
             title="Register your interest"
-            intro="Share a few details and a partner will contact you. Detailed financial information is provided after an introductory conversation."
+            intro="Share a few details and we will contact you. Detailed financial information is provided after an introductory conversation."
           />
           <div className="mt-8 rounded-brand border border-line bg-bg p-6 sm:p-8">
             <InvestorForm />

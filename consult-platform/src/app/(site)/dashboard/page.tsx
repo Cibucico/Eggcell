@@ -119,7 +119,7 @@ async function Dashboard({
           {live.length === 0 ? (
             <EmptyState
               title="You are not registered for any live sessions"
-              text="Join a live online session with our partners."
+              text="Join a live online session with our team."
               action={<ButtonLink href="/live">See upcoming sessions</ButtonLink>}
             />
           ) : (
@@ -185,7 +185,7 @@ async function Dashboard({
           {bookings.length === 0 ? (
             <EmptyState
               title="No consultations booked"
-              text="Request a free 30-minute conversation with a partner."
+              text="Request a free 30-minute conversation with one of our consultants."
               action={<ButtonLink href="/book">Book a consultation</ButtonLink>}
             />
           ) : (

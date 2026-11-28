@@ -138,7 +138,7 @@ export async function submitBooking(_prev: ActionState, formData: FormData): Pro
     sendEmail({
       to: values.email,
       subject: `We received your consultation request | ${brand.name}`,
-      text: `Hello ${values.name},\n\nThank you for requesting a consultation with ${brand.name}.\n\nRequested time: ${when}\n\nThis time is not confirmed yet. We will email you within one business day to confirm it or suggest an alternative.\n\n${brand.name}\n${brand.contact.phone}`,
+      text: `Hello ${values.name},\n\nThank you for requesting a consultation with ${brand.name}.\n\nRequested time: ${when}\n\nThis time is not confirmed yet. We will email you within one business day to confirm it or suggest an alternative.\n\n${brand.name}${brand.contact.phone ? `\n${brand.contact.phone}` : ""}`,
     }),
   ]);
   if (depositCents > 0) redirect(`/checkout/booking/${bookingId}`);
@@ -154,7 +154,7 @@ export async function submitInvestorInterest(
   if (!parsed.success) return validationError(parsed.error);
   const success: ActionState = {
     status: "success",
-    message: "Thank you for your interest. A partner will contact you personally.",
+    message: "Thank you for your interest. We will contact you personally.",
   };
   if (isBot(formData)) return success;
   if (!isSupabaseConfigured) return { status: "error", message: PREVIEW_MESSAGE };
